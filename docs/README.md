@@ -1,7 +1,11 @@
-# Headline
 
-> An awesome project.
+# This is my personal blog where
+
 
 ```js
-[1,2,3].map(v => v + 1);
+['data', 'code', 'tools', 'fun stuff'].forEach(input => {
+  learn(input);
+  simplify(input);
+  share(input);
+});
 ```
