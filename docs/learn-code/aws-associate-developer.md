@@ -94,7 +94,7 @@
 
 ## 4. SQS
 
-> can be delivered in multiple times and in any order. **NOT FIFO**
+!> can be delivered in multiple times and in any order. **NOT FIFO**
 
 - **PULL**
 - the **1st** service in AWS
@@ -117,11 +117,26 @@
 - send email json: TopicArn,
 - TTL (undelivered messages will expire)
 
-> SQS and SNS are both messages services, SNS is PUSH, SQS is PULL
+SQS vs SNS
+- both messages services
+- SNS is PUSH
+- SQS is PULL
 
 > message can be customized for each protocol
 
 ## 6. SWF
+
+- Workers to get task, process, return result
+- Decider to control the coordination of tasks
+- Domain as container
+- Max workflow can be **1yr**
+
+!> SWF maintains the execution state. It ensures a task is **assigned only once** and is **never duplicated**
+
+SWF vs SQS
+- SWF: task-oriented vs  SQS: message-oriented
+- SWF: task assigned only once and never duplicated vs message delivered in multiple times and in any order
+- SWF: track execution state vs SQS doesn't
 
 ## 7. Beanstalk
 
