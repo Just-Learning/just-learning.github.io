@@ -1,21 +1,21 @@
 
 
-## Setup this website
+# Setup this website
 
-### TL;TR
+## TL;TR
 
 - GitHub Pages for hosting the website and content
 - Namecheap for domain name
 - Docsify for generating the website from markdown documents
 
 
-### Prep.
+## Prep.
 
-### Setup the GitHub Page
+## Setup the GitHub Page
 
-### Buy a domain
+## Buy a domain
 
-### Link them together
+## Link them together
 
 
-### Reference
+## Reference
