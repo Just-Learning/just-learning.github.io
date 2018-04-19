@@ -1,1 +1,1 @@
-justlearning.club@gmail.com
+> Email me: [jamie@justlearning.club](mailto:jamie@justlearning.club)
