@@ -92,12 +92,11 @@
 
 ### Query vs Scan
 
-
-
 ## 4. SQS
 
 > can be delivered in multiple times and in any order. **NOT FIFO**
 
+- **PULL**
 - the **1st** service in AWS
 - largest message can be **256kb**
 - default visibility timeout: **30s**, max/**12hr**, can be extended by `ChangeMessageVisibility`
@@ -109,6 +108,18 @@
 
 ## 5. SNS
 
+- **PUSH**
+- `publish/subscribe`, publish message and immediately deliver to subscribers
+- subscriber needs confirm the subscription
+- to SMS, email, http/s endpoint, SQS, App
+- **Topic**
+- pay as you go
+- send email json: TopicArn,
+- TTL (undelivered messages will expire)
+
+> SQS and SNS are both messages services, SNS is PUSH, SQS is PULL
+
+> message can be customized for each protocol
 
 ## 6. SWF
 
