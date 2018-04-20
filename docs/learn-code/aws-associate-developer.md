@@ -59,6 +59,15 @@
 
 
 ### EBS
+- Blocked Storage > virtual disk
+
+Volumes | Snapshots
+--------|----------
+EBS, virtual disk | S3
+take a snapshot of a volume | snapshot is a point-time copy of volume
+block storage | incremental
+
+
 
 ### EFS
 
@@ -82,10 +91,56 @@
 
 [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
 
-### Partition Key + Sort Key
-- partition key, aka. hash key / sort key aka. range key
-- partition key + sort key must be unique (sort key is optional)
+- store in SSD
+- replicates data across three facilities in an AWS Region
+
+> pricing by **read** throughput and **write** throughput
+
+### Primary Keys
+
+- Partition Key: hash key (like the unique key in relational database)
+- Sort Ke: range key
+
+Single primary key (**partition key**)
+- partition key (unique)
+
+Composite primary key (**Partition Key + Sort Key**)
+- partition key + sort key (unique)
+- 2 items cam have same partition key but must have a different sort key
+- all items w same partition key store in one partition, and sorted by sort key
 - e.g. partition key = unique user id and sort key = time stamp
+
+### Secondary Indexes
+
+local secondary index (LSI)
+- same partition key + different sort key
+- can be create at table creation
+
+global secondary index (GSI)
+- different partition key + different sort key
+- can be create at table creation or LATER
+
+
+### Streams
+
+capture modifications of DynamoDB
+- new: entire item
+- update: before and after
+- delete: entire deleted item
+- data stored for **24hr**
+
+### Query vs Scan
+
+### Provisioned Throughput
+
+Read Capacity Units (RCU): (round up to 4K)
+- Strongly Consistent Reads: 1/s
+- Eventually Consistent Reads: 2/s
+
+Write Capacity Units (WCU):
+
+
+Strong Consistency vs Eventual Consistency
 
 
 ### Index
@@ -143,12 +198,14 @@ SWF vs SQS
 ## 8. CloudFormation
 
 ## 9. Shared Responsibility
+- aws upgrade os, security
+
 
 ## 10. Route53
 
 ## 11. DNS
 
-## 12. VPC
+## 12. VPC ❗️
 
 ## References
 
