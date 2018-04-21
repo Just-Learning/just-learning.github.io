@@ -22,61 +22,153 @@
 - General troubleshooting
 - Best Practices in debugging
 
-## 1. EC2 ❗️
+## IAM ❗️
 
-[EC2 FAQ](https://aws.amazon.com/ec2/faqs/)
+!> IAM is global
+
+IAM contains **users**, **groups** (group users and assign policies), **roles**, **policies** in json
+
+IAM
+- centralized control of your AWS account
+- integrates with existing AD account allowing single sign on (**SSO**)
+  - SSO on ADFS `https://signin.aws.amazon.com/saml`
+  - get SAML from AD (Security Assertion Markup Language)
+  - `AssumeRoleWithSAML`
+- integrated with social media account allowing temporary access (**Web Identity Federation**)
+  - authenticates with facebook
+  - get ID token
+  - `AssumeRoleWithWebIdentity`
+- fine-grained access control to AWS resources
+
+Tips:
+- `root account` first setup the aws account, full admin access
+- should login as a user
+- user assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
+- always setup multifactor on your root account
+- password rotation policies
+
+Roles
+
+- you can assign rules to an EC2 instance AFTER it has been provisioned.
+- roles are easier to manage than user's Access Key ID and Secret Access Key
+- roles are **global**
+
+
+## EC2 ❗️
+
+?> [EC2 FAQ](https://aws.amazon.com/ec2/faqs/)
 
 ### Types
 
 [EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/)
 
-- General
-  - T (cheap)
-  - M
-- CPU
-  - C
-- GPU
-  - P compute
-  - G graphics-intensive
-  - F FPGA // Field-programmable gate array
-- Memory
-  - X (extreme)
-  - R (optimized)
-- Storage
-  - H (HHD high throughput)
-  - I (SSD IOPS) // input output per second
-  - D (HDD cheap)
+\ | Type | Specialty | Use case
+-----|------|-----------|----------
+General | T | **lowest** cost | web servers/small DBs
+        | M | general purpose | App servers
+CPU | C | compute optimized | CPU intensive Apps/DBs
+GPU | P | **GPU compute** | machine learning, bit coin mining
+    | G | **graphics** intensive | video encoding, 3D app
+    | F | field programmable gate array | hardware acceleration
+Memory | X | RAM **extreme** optimized | SAP HANA/Apache Spark
+       | R | RAM optimized | memory intensive Apps/DBs
+Storage | H | **HHD** high throughput |
+        | I | **SSD** IOPS |
+        | D | dense storage | file server, data warehouse, hadoop
 
 ### Pricing
-- On Demand
-- Spot (up-to 90% discount, can be interrupted with two minutes of notification, e.g. test, analytics, stateless app, image rendering, etc)
-- Reserved (you can pay upfront to get more discount)
-- Dedicated Instances
-- Dedicated Hosts (physical server)
+
+Type | Use case
+-----|---------
+On Demand | spike access on Friday and go down
+Spot | can be interrupted, for testing, analytics
+Reserved | very stable and fix web app, pay upfront to get more discount
+Dedicated Instances |  fully owned EC2 instances
+Dedicated Hosts | physical server
+
+?> If you terminate the the spot instance, you pay for the hour. If AWS terminates it, you get the hour for free.
+
+### EC2 Tips
+- termination protection is turned off by default
+- on EBS-backed instance, root EBS volume to be deleted when instance is terminated by default
+- support for encrypted boot volumes
+- get instance info, e.g. public ip `curl http://169.254.169.254/latest/meta-data/`
 
 ### Security Group
 - stateful
 
 
 ### EBS
-- Blocked Storage > virtual disk
+
+Blocked Storage, like virtual disk
+!> cannot mount 1 EBS volume on multiple EC2 instances, instead use EFS
+
+- SSD, General Purpose
+- SSD, Provisioned IOPS
+- HDD, Throughout Optimized, **frequent access**, data warehousing, logging
+- HDD, Code, **less frequent access**, file servers
+- HDD, Magnetic, cheap
 
 Volumes | Snapshots
 --------|----------
 EBS, virtual disk | S3
 take a snapshot of a volume | snapshot is a point-time copy of volume
 block storage | incremental
+encrypted >>> | <<< encrypted
+
+Cross-Account Copying: You can share the encrypted EBS snapshot
+
+?> To create a snapshot for an Amazon EBS volume that serves as a root device, you should stop the instance before taking the snapshot.
+
+[Instance Store vs EBS](https://aws.amazon.com/premiumsupport/knowledge-center/instance-store-vs-ebs/)
+
+Instance store-backed instances | Amazon EBS-backed instances
+--------------------------------|-----------------------------
+The root device is temporary. If you stop the instance, the data on the root device vanishes and cannot be recovered. | The root device is an Amazon EBS volume. If you stop the instance, the Amazon EBS volume persists. If you restart the instance, the volume is automatically remounted, restoring the instance state and any stored data. You can also mount the volume on a different instance.
+
+[Take snapshot of a RAID Array](https://aws.amazon.com/premiumsupport/knowledge-center/snapshot-ebs-raid-array/)
 
 
+To create an "application-consistent" snapshot of your RAID array, stop applications from writing to the RAID array, and flush all caches to disk. Then ensure that the associated EC2 instance is no longer writing to the RAID array by taking steps such as **freezing** the file system, **unmounting** the RAID array, or **shutting down** the associated EC2 instance.
+
+### AMI (Amazon Machine Images)
+
+**regional** must copy to other regions then lunch instance in that region.
+
+
+### CloudWatch
+
+- standard monitoring **5m**
+- detailed monitoring **1m**
+- dashboards for visual
+- alarms for notification
+
+?> CloudWatch is performance monitoring whereas CloudTrail is for auditing
 
 ### EFS
 
-### Load Balancer
+- Network File System (NFS)
+- pay as you use, no provisioning required
+- scale up PB
+- K of concurrent NFS connections
+- across multiple AZs with in a region
+- **Read After Write** consistency
 
-- alias records
-- can't resolved by A records
+### Load Balancer ($chargeable$)
 
-### Lambda (out of scope in 2018)
+- Application vs Classic
+- Health Check: timeout, interval, threshold
+- InService / OutService
+- ELB uses **DNS name** because public IP address might change
+- EC2 instance can get public IP
+- SO in R53, must use **alias** records cause can't resolved by **A** records
+
+?> Application Load Balancers now support multiple SSL certificates and Smart Certificate Selection using Server Name Indication (SNI)
+
+### Lambda and Serverless
+
+- event driven compute service
+- response on HTTP with API Gateway
 
 ### CLI Commands
 - [AWS CLI Command](https://docs.aws.amazon.com/cli/latest/index.html)
@@ -85,19 +177,48 @@ block storage | incremental
 - start-instances (start)
 - run-instances (create)
 
+### SDK
 
-##  2. S3 ❗️
+Available SDK
+- Android, iOS, Browser
+- Java
+- .Net
+- Node.js
+- PHP
+- Python
+- Go
+- C++
 
-[S3 FAQ](https://aws.amazon.com/s3/faqs/)
+Default Regions = US-EAST-1
 
-## 3. DynamoDB ❗️
+## S3 ❗️
 
-[DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
+?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
+## DynamoDB ❗️❗️
+
+### General
+
+?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
+
+- fully managed, can't SSH or RDP
 - store in SSD
-- replicates data across three facilities in an AWS Region
+- replicates data across 3 geo distinct data center
 
 > pricing by **read** throughput and **write** throughput
+
+Eventual Consistency (default)
+- consistency across all copies within **1s**
+- best read performance
+
+Strong Consistency
+-
+
+Terms
+- Table
+- Item
+- Attribute
+
 
 ### Primary Keys
 
@@ -111,18 +232,17 @@ Composite primary key (**Partition Key + Sort Key**)
 - partition key + sort key (unique)
 - 2 items cam have same partition key but must have a different sort key
 - all items w same partition key store in one partition, and sorted by sort key
-- e.g. partition key = unique user id and sort key = time stamp
+- e.g. partition key = unique (user id and time stamp)
 
 ### Secondary Indexes
 
 local secondary index (LSI)
-- same partition key + different sort key
-- can be create at table creation
+- **same** partition key + **different** sort key
+- create at table creation
 
 global secondary index (GSI)
-- different partition key + different sort key
-- can be create at table creation or LATER
-
+- **different** partition key + **different** sort key
+- create at table creation or **LATER**
 
 ### Streams
 
@@ -134,23 +254,49 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
+- query using partition key
+- scan: every item, `ProjectionExpression`
+- prefer query over scan
+
 ### Provisioned Throughput
 
 Read Capacity Units (RCU): (round up to 4K)
 - Strongly Consistent Reads: 1/s
 - Eventually Consistent Reads: 2/s
 
+Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
+1. how many unit per item? 10KB round up to 4KB / 4KB = 3 unit /s
+2. 5 * 3 = 15 unit /s
+3. read throughput
+  - eventual consistency ceil(15 / 2) = 8
+  - strong consistency 15
+
 Write Capacity Units (WCU):
 
+`ProvisionedThroughputExceededException` HTTP error 400
 
-Strong Consistency vs Eventual Consistency
+Authenticate
+1. authenticates with ID provider (fb, g)
+2. pass a token by ID provider
+3. your app call `AssumeRoleWithWebIdentity` with token, arn for the IAM role
+4. your app can now access DynamoDB **15m ~ 1hr (default)**
 
 
-### Index
+Conditional Write
+- by default (PutItem, UpdateItem, DeleteItem) are unconditional
+- concurrency safe
+- idempotent (幂等):send same conditional write request multiple times w/o further effect
 
-### Query vs Scan
+Atomic Counters
+- global incremental counter for visits
+- concurrency safe
 
-## 4. SQS
+Batch Operations
+- `BatchGetItem` from one or more tables
+- 16 MB of data, which can contain as many as 100 items
+- `ValidationException` if more than 100 items
+
+## SQS
 
 !> can be delivered in multiple times and in any order. **NOT FIFO**
 
@@ -164,7 +310,7 @@ Strong Consistency vs Eventual Consistency
   - max wait time **20s**
 - messages -> SNS -> all subscribed  SQS queues
 
-## 5. SNS
+## SNS
 
 - **PUSH**
 - `publish/subscribe`, publish message and immediately deliver to subscribers
@@ -196,7 +342,7 @@ SWF vs SQS
 - SWF: task assigned only once and never duplicated vs message delivered in multiple times and in any order
 - SWF: track execution state vs SQS doesn't
 
-## 7. Beanstalk
+## Beanstalk
 
 - multiple application versions (zip)
 - split in to tiers (web/app/db)
@@ -212,7 +358,7 @@ SWF vs SQS
   - Docker
   - Go
 
-## 8. CloudFormation
+## CloudFormation
 
 - *automatic rollback on error*, charge for errors
 - *WaitCondition* wait for resources to be provisioned
@@ -223,7 +369,7 @@ SWF vs SQS
 - **free** but pay for the resources it provisions
 - error occurs: rollback all resources created onn failure
 
-## 9. Shared Responsibility
+##  Shared Responsibility
 
 Infrastructure Services
 
@@ -245,7 +391,7 @@ Abstracted Services
 - e.g. DynamoDB, Lambda
 
 
-## 10. Route53 ❗️
+##  Route53 ❗️
 
 > R53 is global like IAM
 
@@ -268,7 +414,7 @@ Geolocation
 - route based on geo location (cross region)
 - shift traffic from resources in one location to resources in another.
 
-## 11. DNS
+## DNS
 
 search a public ip by a  domain name
 
@@ -287,13 +433,15 @@ Tips:
 - Alias vs CNAME
 - choose Alias over CNAME
 
-## 12. VPC ❗️
+## VPC ❗️
 
 ## References
 
 - https://aws.amazon.com/certification/certified-developer-associate/
 - http://awstrainingandcertification.s3.amazonaws.com/production/AWS_certified_developer_associate_blueprint.pdf
 - https://aws.amazon.com/whitepapers/aws-security-best-practices/
+- https://aws.amazon.com/blogs/aws/new-cross-account-copying-of-encrypted-ebs-snapshots/
+- https://aws.amazon.com/about-aws/whats-new/2015/12/amazon-ebs-announces-support-for-encrypted-boot-volumes/
 - https://aws.amazon.com/faqs/
 - https://docs.aws.amazon.com/cli/latest/index.html
 - https://aws.amazon.com/ec2/instance-types
