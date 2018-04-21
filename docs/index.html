@@ -17,13 +17,38 @@
   </style>
 </head>
 <body>
+  <nav>
+    <a href="#/learn-data/readme">Data</a>
+    <a href="#/learn-code/readme">Code</a>
+    <a href="#/learn-tools/readme">Tools</a>
+    <a href="#/./global/about">About</a>
+  </nav>
   <div id="app"></div>
   <script>
     window.$docsify = {
-      loadSidebar: true,
+      homepage: './global/home.md',
+      loadSidebar: './global/sidebar.md',
+      notFoundPage: './global/notfound.md',
+      autoHeader: true,
       name: 'Just Learning',
       themeColor: '#f25858',
       subMaxLevel:2,
+      maxLevel: 4,
+      noEmoji: true,
+      plugins: [
+        function (hook) {
+          var footer = [
+            '<hr/>',
+            '<footer>',
+            '<span><a href="https://github.com/Just-Learning" target="_blank">Just-Learning</a> &copy;2018.</span>',
+            '</footer>'
+          ].join('')
+
+          hook.afterEach(function (html) {
+            return html + footer
+          })
+        }
+      ]
     }
   </script>
   <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
