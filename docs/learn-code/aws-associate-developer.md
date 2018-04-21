@@ -195,10 +195,51 @@ SWF vs SQS
 
 ## 7. Beanstalk
 
+- multiple application versions (zip)
+- split in to tiers (web/app/db)
+- update app or config: 1 instance / % instance / immutable
+- **free** but pay for the resources it uses
+- Beanstalk manages RDS instance it created
+- supports
+  - Tomcat for Java
+  - HTTP Server for PHP
+  - Nginx or HTTP Server for Node.js
+  - IIS for .Net
+  - Java SE
+  - Docker
+  - Go
+
 ## 8. CloudFormation
 
+- *automatic rollback on error*, charge for errors
+- *WaitCondition* wait for resources to be provisioned
+- *FN::GetAtt* to output data
+- *R53* supported, hosted zones / records creation
+- *IAM* role creation
+- default format is *json* / template in json
+- **free** but pay for the resources it provisions
+- error occurs: rollback all resources created onn failure
+
 ## 9. Shared Responsibility
-- aws upgrade os, security
+
+Infrastructure Services
+
+- aws
+  - foundation: compute, storage, db, networking
+  - infrastructure: region, availability zone, edge location
+  - e.g. hyper-v: aws patch and reboot
+- customers
+  - IAM
+  - customer data, platform, app management, os, network, firewall config
+  - encryption: client side / server-side, network traffic protection: http/https
+
+Container Services
+- aws takes care of os, platform and app management, patch os
+- e.g. RDS, EMR
+
+Abstracted Services
+- customer data, client-side encryption
+- e.g. DynamoDB, Lambda
 
 
 ## 10. Route53
@@ -209,7 +250,9 @@ SWF vs SQS
 
 ## References
 
+- https://aws.amazon.com/certification/certified-developer-associate/
 - http://awstrainingandcertification.s3.amazonaws.com/production/AWS_certified_developer_associate_blueprint.pdf
+- https://aws.amazon.com/whitepapers/aws-security-best-practices/
 - https://aws.amazon.com/faqs/
 - https://docs.aws.amazon.com/cli/latest/index.html
 - https://aws.amazon.com/ec2/instance-types
