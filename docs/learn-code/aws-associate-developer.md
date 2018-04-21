@@ -90,14 +90,31 @@ block storage | incremental
 
 [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
-## 3. DynamoDB ❗️
+## 3. DynamoDB ❗️❗️
+
+### General
 
 [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
 
+- fully managed, can't SSH or RDP
 - store in SSD
-- replicates data across three facilities in an AWS Region
+- replicates data across 3 geo distinct data center
 
 > pricing by **read** throughput and **write** throughput
+
+
+Eventual Consistency (default)
+- consistency across all copies within **1s**
+- best read performance
+
+Strong Consistency
+-
+
+Terms
+- Table
+- Item
+- Attribute
+
 
 ### Primary Keys
 
@@ -111,18 +128,17 @@ Composite primary key (**Partition Key + Sort Key**)
 - partition key + sort key (unique)
 - 2 items cam have same partition key but must have a different sort key
 - all items w same partition key store in one partition, and sorted by sort key
-- e.g. partition key = unique user id and sort key = time stamp
+- e.g. partition key = unique (user id and time stamp)
 
 ### Secondary Indexes
 
 local secondary index (LSI)
-- same partition key + different sort key
-- can be create at table creation
+- **same** partition key + **different** sort key
+- create at table creation
 
 global secondary index (GSI)
-- different partition key + different sort key
-- can be create at table creation or LATER
-
+- **different** partition key + **different** sort key
+- create at table creation or **LATER**
 
 ### Streams
 
@@ -134,21 +150,47 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
+- query using partition key
+- scan: every item, `ProjectionExpression`
+- prefer query over scan
+
 ### Provisioned Throughput
 
 Read Capacity Units (RCU): (round up to 4K)
 - Strongly Consistent Reads: 1/s
 - Eventually Consistent Reads: 2/s
 
+Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
+1. how many unit per item? 10KB round up to 4KB / 4KB = 3 unit /s
+2. 5 * 3 = 15 unit /s
+3. read throughput
+  - eventual consistency ceil(15 / 2) = 8
+  - strong consistency 15
+
 Write Capacity Units (WCU):
 
+`ProvisionedThroughputExceededException` HTTP error 400
 
-Strong Consistency vs Eventual Consistency
+Authenticate
+1. authenticates with ID provider (fb, g)
+2. pass a token by ID provider
+3. your app call `AssumeRoleWithWebIdentity` with token, arn for the IAM role
+4. your app can now access DynamoDB **15m ~ 1hr (default)**
 
 
-### Index
+Conditional Write
+- by default (PutItem, UpdateItem, DeleteItem) are unconditional
+- concurrency safe
+- idempotent (幂等):send same conditional write request multiple times w/o further effect
 
-### Query vs Scan
+Atomic Counters
+- global incremental counter for visits
+- concurrency safe
+
+Batch Operations
+- `BatchGetItem` from one or more tables
+- 16 MB of data, which can contain as many as 100 items
+- `ValidationException` if more than 100 items
 
 ## 4. SQS
 
