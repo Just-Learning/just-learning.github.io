@@ -22,7 +22,22 @@
 - General troubleshooting
 - Best Practices in debugging
 
-## 1. EC2 ❗️
+## IAM ❗️
+
+!> IAM is global
+
+- users
+- groups (group users and assign policies)
+- roles
+- policy (json)
+
+- `root account` first setup the aws account, full admin access
+- should login as a user
+- user assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
+- always setup multifactor on your root account
+- password rotation policies
+
+## EC2 ❗️
 
 [EC2 FAQ](https://aws.amazon.com/ec2/faqs/)
 
@@ -86,11 +101,11 @@ block storage | incremental
 - run-instances (create)
 
 
-##  2. S3 ❗️
+## S3 ❗️
 
 [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
-## 3. DynamoDB ❗️❗️
+## DynamoDB ❗️❗️
 
 ### General
 
@@ -192,7 +207,7 @@ Batch Operations
 - 16 MB of data, which can contain as many as 100 items
 - `ValidationException` if more than 100 items
 
-## 4. SQS
+## SQS
 
 !> can be delivered in multiple times and in any order. **NOT FIFO**
 
@@ -206,7 +221,7 @@ Batch Operations
   - max wait time **20s**
 - messages -> SNS -> all subscribed  SQS queues
 
-## 5. SNS
+## SNS
 
 - **PUSH**
 - `publish/subscribe`, publish message and immediately deliver to subscribers
@@ -238,7 +253,7 @@ SWF vs SQS
 - SWF: task assigned only once and never duplicated vs message delivered in multiple times and in any order
 - SWF: track execution state vs SQS doesn't
 
-## 7. Beanstalk
+## Beanstalk
 
 - multiple application versions (zip)
 - split in to tiers (web/app/db)
@@ -254,7 +269,7 @@ SWF vs SQS
   - Docker
   - Go
 
-## 8. CloudFormation
+## CloudFormation
 
 - *automatic rollback on error*, charge for errors
 - *WaitCondition* wait for resources to be provisioned
@@ -265,7 +280,7 @@ SWF vs SQS
 - **free** but pay for the resources it provisions
 - error occurs: rollback all resources created onn failure
 
-## 9. Shared Responsibility
+##  Shared Responsibility
 
 Infrastructure Services
 
@@ -287,7 +302,7 @@ Abstracted Services
 - e.g. DynamoDB, Lambda
 
 
-## 10. Route53 ❗️
+##  Route53 ❗️
 
 > R53 is global like IAM
 
@@ -310,7 +325,7 @@ Geolocation
 - route based on geo location (cross region)
 - shift traffic from resources in one location to resources in another.
 
-## 11. DNS
+## DNS
 
 search a public ip by a  domain name
 
@@ -329,7 +344,7 @@ Tips:
 - Alias vs CNAME
 - choose Alias over CNAME
 
-## 12. VPC ❗️
+## VPC ❗️
 
 ## References
 
