@@ -73,6 +73,9 @@ block storage | incremental
 
 ### Load Balancer
 
+- alias records
+- can't resolved by A records
+
 ### Lambda (out of scope in 2018)
 
 ### CLI Commands
@@ -242,9 +245,47 @@ Abstracted Services
 - e.g. DynamoDB, Lambda
 
 
-## 10. Route53
+## 10. Route53 ❗️
+
+> R53 is global like IAM
+
+Simple Policies
+- example.com / the DNS name of the ELB (alias)
+- 50 50 switch between EC2 instances
+
+Weighted
+- split traffic to multiple resources
+
+Latency
+- route based on latency (cross region)
+- route traffic to the resource that provides the best latency.
+
+Failover
+- health check the London ELB endpoint
+- 2 records: primary and secondary,
+
+Geolocation
+- route based on geo location (cross region)
+- shift traffic from resources in one location to resources in another.
 
 ## 11. DNS
+
+search a public ip by a  domain name
+
+top Level Domains: .com .gov .edu, second level domain name: .com.au, .edu.cn
+
+- SOA Records ()
+- NS Records (**name** server by top level domain servers)
+- A Records (**domain name / ip address**)
+- TTL (cache, time to live)
+- CNAMES (canonical **domain name / domain name**)
+- Alias Records (AWS created, easy way to map naked domain name (apex) to **resource record / ELB, CF distribution, S3 bucket**)
+
+
+Tips:
+- ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name
+- Alias vs CNAME
+- choose Alias over CNAME
 
 ## 12. VPC ❗️
 
