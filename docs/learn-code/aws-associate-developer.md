@@ -59,6 +59,15 @@
 
 
 ### EBS
+- Blocked Storage > virtual disk
+
+Volumes | Snapshots
+--------|----------
+EBS, virtual disk | S3
+take a snapshot of a volume | snapshot is a point-time copy of volume
+block storage | incremental
+
+
 
 ### EFS
 
@@ -82,10 +91,56 @@
 
 [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
 
-### Partition Key + Sort Key
-- partition key, aka. hash key / sort key aka. range key
-- partition key + sort key must be unique (sort key is optional)
+- store in SSD
+- replicates data across three facilities in an AWS Region
+
+> pricing by **read** throughput and **write** throughput
+
+### Primary Keys
+
+- Partition Key: hash key (like the unique key in relational database)
+- Sort Ke: range key
+
+Single primary key (**partition key**)
+- partition key (unique)
+
+Composite primary key (**Partition Key + Sort Key**)
+- partition key + sort key (unique)
+- 2 items cam have same partition key but must have a different sort key
+- all items w same partition key store in one partition, and sorted by sort key
 - e.g. partition key = unique user id and sort key = time stamp
+
+### Secondary Indexes
+
+local secondary index (LSI)
+- same partition key + different sort key
+- can be create at table creation
+
+global secondary index (GSI)
+- different partition key + different sort key
+- can be create at table creation or LATER
+
+
+### Streams
+
+capture modifications of DynamoDB
+- new: entire item
+- update: before and after
+- delete: entire deleted item
+- data stored for **24hr**
+
+### Query vs Scan
+
+### Provisioned Throughput
+
+Read Capacity Units (RCU): (round up to 4K)
+- Strongly Consistent Reads: 1/s
+- Eventually Consistent Reads: 2/s
+
+Write Capacity Units (WCU):
+
+
+Strong Consistency vs Eventual Consistency
 
 
 ### Index
@@ -140,19 +195,64 @@ SWF vs SQS
 
 ## 7. Beanstalk
 
+- multiple application versions (zip)
+- split in to tiers (web/app/db)
+- update app or config: 1 instance / % instance / immutable
+- **free** but pay for the resources it uses
+- Beanstalk manages RDS instance it created
+- supports
+  - Tomcat for Java
+  - HTTP Server for PHP
+  - Nginx or HTTP Server for Node.js
+  - IIS for .Net
+  - Java SE
+  - Docker
+  - Go
+
 ## 8. CloudFormation
 
+- *automatic rollback on error*, charge for errors
+- *WaitCondition* wait for resources to be provisioned
+- *FN::GetAtt* to output data
+- *R53* supported, hosted zones / records creation
+- *IAM* role creation
+- default format is *json* / template in json
+- **free** but pay for the resources it provisions
+- error occurs: rollback all resources created onn failure
+
 ## 9. Shared Responsibility
+
+Infrastructure Services
+
+- aws
+  - foundation: compute, storage, db, networking
+  - infrastructure: region, availability zone, edge location
+  - e.g. hyper-v: aws patch and reboot
+- customers
+  - IAM
+  - customer data, platform, app management, os, network, firewall config
+  - encryption: client side / server-side, network traffic protection: http/https
+
+Container Services
+- aws takes care of os, platform and app management, patch os
+- e.g. RDS, EMR
+
+Abstracted Services
+- customer data, client-side encryption
+- e.g. DynamoDB, Lambda
+
 
 ## 10. Route53
 
 ## 11. DNS
 
-## 12. VPC
+## 12. VPC ❗️
 
 ## References
 
+- https://aws.amazon.com/certification/certified-developer-associate/
 - http://awstrainingandcertification.s3.amazonaws.com/production/AWS_certified_developer_associate_blueprint.pdf
+- https://aws.amazon.com/whitepapers/aws-security-best-practices/
 - https://aws.amazon.com/faqs/
 - https://docs.aws.amazon.com/cli/latest/index.html
 - https://aws.amazon.com/ec2/instance-types
