@@ -154,7 +154,7 @@ To create an "application-consistent" snapshot of your RAID array, stop applicat
 - across multiple AZs with in a region
 - **Read After Write** consistency
 
-### Load Balancer ($)
+### Load Balancer ($chargeable$)
 
 - Application vs Classic
 - Health Check: timeout, interval, threshold
@@ -162,6 +162,8 @@ To create an "application-consistent" snapshot of your RAID array, stop applicat
 - ELB uses **DNS name** because public IP address might change
 - EC2 instance can get public IP
 - SO in R53, must use **alias** records cause can't resolved by **A** records
+
+?> Application Load Balancers now support multiple SSL certificates and Smart Certificate Selection using Server Name Indication (SNI)
 
 ### Lambda and Serverless
 
