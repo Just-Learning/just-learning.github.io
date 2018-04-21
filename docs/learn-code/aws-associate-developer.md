@@ -328,7 +328,7 @@ SQS vs SNS
 
 > message can be customized for each protocol
 
-## 6. SWF
+## SWF
 
 - Workers to get task, process, return result
 - Decider to control the coordination of tasks

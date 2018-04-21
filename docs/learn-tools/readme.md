@@ -2,4 +2,4 @@
 
 > I like automatic manual process
 
-* [ ] definitely jq (a powerful json query tool)
+* [ ] definitely jq *a powerful json query tool*
