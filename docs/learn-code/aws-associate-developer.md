@@ -195,6 +195,84 @@ Default Regions = US-EAST-1
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
+S3 Types
+- S3: immediately available, frequent access
+- S3 IA: infrequent access
+- S3 RRS: reduced redundancy storage, reproducible data, e.g. thumb nails
+- Glacier: archived data
+
+Features
+- **Unlimited** object-based storage whereas EBS is block-based, EFS is Network File System, you can install OS or Apps on S3
+- file size **0 ~ 5TB**
+- largest file using PUT  **5G**
+- Bucket name must be **globally unique** and lower-case
+- bucket arn: arn:aws:s3:::bucketname
+- static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
+-  bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
+- multi part upload
+- HTTP 200 for a successful write
+- **pre-signed** URL with expiration date and time to download private data,
+
+Consistency
+- **Read After Write Consistency** for CREATE an object
+- **Eventual Consistency** for UPDATE and DELETE
+
+Object contains *Key, Value, Version ID, Metadata, Access Control List*
+
+Versioning
+- all version including delete an object
+- charge on each version
+- easy to backup
+- can be enabled, suspended, can't be disabled
+- lifecycle rules
+- MFA on DELETE
+- cross region replication, requires versioning enabled on the source bucket
+
+Lifecycle Management, work with current version and previous version
+- scope: whole or prefix
+- transition: after X days transfer previous version to IA/Glacier
+- expiration: permanently delete after X days or clean up rules
+
+Bucket Security
+- by default PRIVATE
+- modify access permission via Access Control List, Bucket Policy, CORS Config
+- bucket access log
+
+CORS
+- Cross Origin Resource Sharing, e.g. web in one bucket, image in another bucket
+- enable CORS on the bucket where the assets are stored. in **xml** format
+
+Encryption
+- In Transit: SSL/TLS
+- Server Side Encryption
+  - S3 Managed Keys: **SSE-S3** (AES-256)
+  - AWS Key Management Service, **SSE-KMS**
+  - with customer provided keys: **SSE-C**
+- Client Side Encryption: encrypt before uploading to S3
+
+Storage Gateway
+- File Gateway: store flat files directly on  S3
+- Volume Gateway
+  - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**
+  - In stored mode, store your entire data set locally, while making an asynchronous S3 and point-in-time EBS snapshots.
+- Tape Gateway (VTL): for backup
+
+Snowball, Snowball Edge (with compute in the box), Snowmobile (truck) - can **Import** to S3 and **Export** from S3
+
+S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
+
+S3 Static Website: cheap, scales automatically, **static** site only
+
+
+
+### CloudFront
+
+- Edge Location where content will be cached, separate to Region/AZ, **Read**, **Write**
+- Origin: the origin of the files, **S3 Bucket, EC2, LB, R53**
+- Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
+- TTL **24hr** by default
+- invalidation: refresh all your cached data
+
 ## DynamoDB ❗️❗️
 
 ### General
@@ -207,12 +285,11 @@ Default Regions = US-EAST-1
 
 > pricing by **read** throughput and **write** throughput
 
-Eventual Consistency (default)
+Eventual Consistency (default) - read throughput / 2
 - consistency across all copies within **1s**
 - best read performance
 
-Strong Consistency
--
+Strong Consistency - read throughput
 
 Terms
 - Table
@@ -260,18 +337,31 @@ capture modifications of DynamoDB
 
 ### Provisioned Throughput
 
-Read Capacity Units (RCU): (round up to 4K)
+**Read Capacity Units (RCU)**: (round up to 4K)
 - Strongly Consistent Reads: 1/s
 - Eventually Consistent Reads: 2/s
 
-Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
+?> Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
 1. how many unit per item? 10KB round up to 4KB / 4KB = 3 unit /s
 2. 5 * 3 = 15 unit /s
 3. read throughput
   - eventual consistency ceil(15 / 2) = 8
   - strong consistency 15
 
-Write Capacity Units (WCU):
+?> Q: read 80 items per second from a table. The items are 3 KB in size, strong consistency
+1. 80 * 1 = 80 units
+2. 80 units for strong consistency
+3. 40 units for eventual consistency
+
+**Write Capacity Units (WCU)**: (round up to 1KB)
+- 1/s
+
+?> Q: write 100 items per second to your table, and that the items are 512 bytes in size
+1. each write requires one provisioned write capacity unit.
+2. 100 * 1KB = 100 units
+
+?> Q: write 3 items per second to your table, and that the items are 3KB bytes in size
+1. 3 * 3 = 9 units
 
 `ProvisionedThroughputExceededException` HTTP error 400
 
@@ -328,7 +418,7 @@ SQS vs SNS
 
 > message can be customized for each protocol
 
-## 6. SWF
+## SWF
 
 - Workers to get task, process, return result
 - Decider to control the coordination of tasks
@@ -371,7 +461,7 @@ SWF vs SQS
 
 ##  Shared Responsibility
 
-Infrastructure Services
+#### Infrastructure Services
 
 - aws
   - foundation: compute, storage, db, networking
@@ -382,11 +472,11 @@ Infrastructure Services
   - customer data, platform, app management, os, network, firewall config
   - encryption: client side / server-side, network traffic protection: http/https
 
-Container Services
+#### Container Services
 - aws takes care of os, platform and app management, patch os
 - e.g. RDS, EMR
 
-Abstracted Services
+#### Abstracted Services
 - customer data, client-side encryption
 - e.g. DynamoDB, Lambda
 

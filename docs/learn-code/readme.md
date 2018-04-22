@@ -4,4 +4,4 @@
 
 * [Setup this website](./learn-code/website-setup.md)
 * [AWS Certified Developer](./learn-code/aws-associate-developer)
-* [ ] CSS and HTML for absolute beginner
+* [ ] CSS and HTML - absolute beginner
