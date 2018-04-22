@@ -285,12 +285,11 @@ S3 Static Website: cheap, scales automatically, **static** site only
 
 > pricing by **read** throughput and **write** throughput
 
-Eventual Consistency (default)
+Eventual Consistency (default) - read throughput / 2
 - consistency across all copies within **1s**
 - best read performance
 
-Strong Consistency
--
+Strong Consistency - read throughput
 
 Terms
 - Table
@@ -338,18 +337,31 @@ capture modifications of DynamoDB
 
 ### Provisioned Throughput
 
-Read Capacity Units (RCU): (round up to 4K)
+**Read Capacity Units (RCU)**: (round up to 4K)
 - Strongly Consistent Reads: 1/s
 - Eventually Consistent Reads: 2/s
 
-Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
+?> Q: 5 items of 10 KB per second using eventual consistency, calculate the read throughput?
 1. how many unit per item? 10KB round up to 4KB / 4KB = 3 unit /s
 2. 5 * 3 = 15 unit /s
 3. read throughput
   - eventual consistency ceil(15 / 2) = 8
   - strong consistency 15
 
-Write Capacity Units (WCU):
+?> Q: read 80 items per second from a table. The items are 3 KB in size, strong consistency
+1. 80 * 1 = 80 units
+2. 80 units for strong consistency
+3. 40 units for eventual consistency
+
+**Write Capacity Units (WCU)**: (round up to 1KB)
+- 1/s
+
+?> Q: write 100 items per second to your table, and that the items are 512 bytes in size
+1. each write requires one provisioned write capacity unit.
+2. 100 * 1KB = 100 units
+
+?> Q: write 3 items per second to your table, and that the items are 3KB bytes in size
+1. 3 * 3 = 9 units
 
 `ProvisionedThroughputExceededException` HTTP error 400
 
@@ -449,7 +461,7 @@ SWF vs SQS
 
 ##  Shared Responsibility
 
-Infrastructure Services
+#### Infrastructure Services
 
 - aws
   - foundation: compute, storage, db, networking
@@ -460,11 +472,11 @@ Infrastructure Services
   - customer data, platform, app management, os, network, firewall config
   - encryption: client side / server-side, network traffic protection: http/https
 
-Container Services
+#### Container Services
 - aws takes care of os, platform and app management, patch os
 - e.g. RDS, EMR
 
-Abstracted Services
+#### Abstracted Services
 - customer data, client-side encryption
 - e.g. DynamoDB, Lambda
 
