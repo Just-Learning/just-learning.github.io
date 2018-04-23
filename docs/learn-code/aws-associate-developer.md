@@ -277,13 +277,23 @@ S3 Static Website: cheap, scales automatically, **static** site only
 
 ### General
 
-?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
+?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/) **MUST READ**
 
 - fully managed, can't SSH or RDP
-- store in SSD
-- replicates data across 3 geo distinct data center
+- store in **SSD**
+- replicates data across 3 geographically distributed replicas
+- **schema-less**
+- secondary index on **top-level** json element only
+- query / scan nest json object `ProjectionExpression`
+- can update **sub-element** of a nest json data
+- **no storage limitation and no throughput limitation**
+- **400KB** limitation per item
+- seamless scalability: automatically scales up and scales down
+- Auto Scaling Policy (**free**): based on CloudWatch, can only be set to a **single table** or a global secondary indexes within a **single region**
 
 > pricing by **read** throughput and **write** throughput
+
+### Consistency model of READ
 
 Eventual Consistency (default) - read throughput / 2
 - consistency across all copies within **1s**
@@ -302,10 +312,10 @@ Terms
 - Partition Key: hash key (like the unique key in relational database)
 - Sort Ke: range key
 
-Single primary key (**partition key**)
+Single-attribute **partition key**
 - partition key (unique)
 
-Composite primary key (**Partition Key + Sort Key**)
+Composite **partition-sort Key**
 - partition key + sort key (unique)
 - 2 items cam have same partition key but must have a different sort key
 - all items w same partition key store in one partition, and sorted by sort key
@@ -313,13 +323,15 @@ Composite primary key (**Partition Key + Sort Key**)
 
 ### Secondary Indexes
 
-local secondary index (LSI)
-- **same** partition key + **different** sort key
-- create at table creation
-
 global secondary index (GSI)
 - **different** partition key + **different** sort key
 - create at table creation or **LATER**
+- a GSI key can be defined on **non-unique** attributes
+
+local secondary index (LSI)
+- in one partition, has to be created at table creation
+- **same** partition key + **different** sort key
+- **max 5 GSI**
 
 ### Streams
 
@@ -331,9 +343,13 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
-- query using partition key
-- scan: every item, `ProjectionExpression`
-- prefer query over scan
+Query | Scan
+------|------
+using partition key | scan all items or index
+fast | slow
+x |  **1MB** `LastEvaluatedKey`
+x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read
+
 
 ### Provisioned Throughput
 
@@ -371,13 +387,13 @@ Authenticate
 3. your app call `AssumeRoleWithWebIdentity` with token, arn for the IAM role
 4. your app can now access DynamoDB **15m ~ 1hr (default)**
 
-
 Conditional Write
 - by default (PutItem, UpdateItem, DeleteItem) are unconditional
 - concurrency safe
 - idempotent (幂等):send same conditional write request multiple times w/o further effect
+- e.g. conditional expression: `ATTRIBUTE_EXIST CONTAINS BEGIN_WITH` `=, <>, <, >,<=, >=, BETWEEN, IN` `NOT AND OR`
 
-Atomic Counters
+Atomic Increment and Decrement
 - global incremental counter for visits
 - concurrency safe
 
@@ -385,6 +401,31 @@ Batch Operations
 - `BatchGetItem` from one or more tables
 - 16 MB of data, which can contain as many as 100 items
 - `ValidationException` if more than 100 items
+
+Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
+
+### DynamoDB vs Other
+
+DynamoDB | RDS
+---------|----
+key-value and document | relational DB (multiple engines)
+weak query | complex query
+fast | x
+predictable performance | x
+
+
+DynamoDB | SimpleDB
+---------|----
+No SQL | No SQL
+no limit | 10 GB
+scalability | scaling limitations
+large | smaller workload
+
+DynamoDB | S3
+---------|----
+1 byte ~ 400 KB | up to 5TB
+small and fast | large and infrequently access
+
 
 ## SQS
 
