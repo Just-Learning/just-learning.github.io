@@ -323,15 +323,25 @@ Composite **partition-sort Key**
 
 ### Secondary Indexes
 
-global secondary index (GSI)
+- independent throughput management
+- a table CRUD, related GSI consume capacity unit
+- a query on GSI consume the read capacity unit
+- charge by hour - provision throughput, data storage, external transfer
+- query/scan - no order or sort by sort key
+- GSI is available after index creation process
+- reduce the write capacity once index creation process is complete (mins to hours, SNS notification, cannot be cancelled)
+- `DescribeTable`
+
+
+global secondary index (GSI) - eventual consistent
 - **different** partition key + **different** sort key
 - create at table creation or **LATER**
 - a GSI key can be defined on **non-unique** attributes
+- **max 5 GSI**
 
-local secondary index (LSI)
+local secondary index (LSI) - strong consistent
 - in one partition, has to be created at table creation
 - **same** partition key + **different** sort key
-- **max 5 GSI**
 
 ### Streams
 
