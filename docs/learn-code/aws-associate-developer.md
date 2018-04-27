@@ -501,14 +501,35 @@ SWF vs SQS
 
 ## CloudFormation
 
+?> turn infrastructure into configuration
+
 - *automatic rollback on error*, charge for errors
 - *WaitCondition* wait for resources to be provisioned
-- *FN::GetAtt* to output data
+- use `Fn::GetAtt` to output data
 - *R53* supported, hosted zones / records creation
 - *IAM* role creation
 - default format is *json* / template in json
-- **free** but pay for the resources it provisions
-- error occurs: rollback all resources created onn failure
+- **free** but pay for the resources it provisions, **full root access**
+- error occurs: rollback all resources created on failure
+- can't nested templates
+
+### Template
+
+-  architecture infrastructure diagram
+- `json` or `yaml`
+
+> `Recourses` List of recourses and associated configuration values, **Mandatory**
+
+```yml
+AWSTemplateFormatVersion: 2010-09-09
+Parameters: # input values - name or password, etc,  max 60
+Mappings: # instance type -> arch, arch -> AMI
+Resources: # resources to be created
+Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
+```
+
+### Stack
+- the resources that created
 
 ##  Shared Responsibility
 
@@ -575,6 +596,8 @@ Tips:
 - choose Alias over CNAME
 
 ## VPC ❗️
+
+## Memorize Matrix
 
 ## References
 
