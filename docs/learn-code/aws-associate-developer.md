@@ -22,7 +22,7 @@
 - General troubleshooting
 - Best Practices in debugging
 
-## IAM ❗️
+## IAM
 
 !> IAM is global
 
@@ -54,7 +54,7 @@ Roles
 - roles are **global**
 
 
-## EC2 ❗️
+## EC2
 
 ?> [EC2 FAQ](https://aws.amazon.com/ec2/faqs/)
 
@@ -191,7 +191,7 @@ Available SDK
 
 Default Regions = US-EAST-1
 
-## S3 ❗️
+## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
@@ -273,7 +273,7 @@ S3 Static Website: cheap, scales automatically, **static** site only
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
 
-## DynamoDB ❗️❗️
+## DynamoDB
 
 ### General
 
@@ -295,11 +295,13 @@ S3 Static Website: cheap, scales automatically, **static** site only
 
 ### Consistency model of READ
 
-Eventual Consistency (default) - read throughput / 2
+Eventual Consistency (default)
 - consistency across all copies within **1s**
 - best read performance
 
-Strong Consistency - read throughput
+Strong Consistency
+
+!> **1 strongly consistent read or 2 eventual consistent read  requires 1 read capacity unit**
 
 Terms
 - Table
@@ -450,6 +452,7 @@ small and fast | large and infrequently access
   - wait until a message is available until timeout
   - max wait time **20s**
 - messages -> SNS -> all subscribed  SQS queues
+- e.g. exceed maximum allowable size, send a reference to a S3 object
 
 ## SNS
 
@@ -522,7 +525,7 @@ SWF vs SQS
 
 ```yml
 AWSTemplateFormatVersion: 2010-09-09
-Parameters: # input values - name or password, etc,  max 60
+Parameters: # input values - name, password, key name, etc,  max 60
 Mappings: # instance type -> arch, arch -> AMI
 Resources: # resources to be created
 Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
@@ -553,7 +556,7 @@ Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
 - e.g. DynamoDB, Lambda
 
 
-##  Route53 ❗️
+##  Route53
 
 > R53 is global like IAM
 
@@ -595,7 +598,7 @@ Tips:
 - Alias vs CNAME
 - choose Alias over CNAME
 
-## VPC ❗️
+## VPC
 
 ## Memorize Matrix
 
