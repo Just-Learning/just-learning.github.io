@@ -209,7 +209,7 @@ Features
 - bucket arn: arn:aws:s3:::bucketname
 - static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
 -  bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
-- multi part upload
+- multi part upload (**stop and restart**)
 - HTTP 200 for a successful write
 - **pre-signed** URL with expiration date and time to download private data,
 
@@ -262,8 +262,6 @@ Snowball, Snowball Edge (with compute in the box), Snowmobile (truck) - can **Im
 S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
 
 S3 Static Website: cheap, scales automatically, **static** site only
-
-
 
 ### CloudFront
 
@@ -345,6 +343,8 @@ local secondary index (LSI) - strong consistent
 - in one partition, has to be created at table creation
 - **same** partition key + **different** sort key
 
+> To create one or more local secondary indexes on a table, use the LocalSecondaryIndexes parameter of the CreateTable operation. Local secondary indexes on a table are created when the table is created. When you delete a table, any local secondary indexes on that table are also deleted. **You can only create one secondary index at a time.**
+
 ### Streams
 
 capture modifications of DynamoDB
@@ -390,6 +390,12 @@ x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with
 
 ?> Q: write 3 items per second to your table, and that the items are 3KB bytes in size
 1. 3 * 3 = 9 units
+
+**Capacity Unit**
+
+- The UpdateTable API call does not use capacity. It is used to change provisioned throughput capacity.
+
+
 
 `ProvisionedThroughputExceededException` HTTP error 400
 
@@ -453,6 +459,7 @@ small and fast | large and infrequently access
   - max wait time **20s**
 - messages -> SNS -> all subscribed  SQS queues
 - e.g. exceed maximum allowable size, send a reference to a S3 object
+- `MessageRetentionPeriod` attribute to set the message retention period from 60 seconds (**1m**) to 1,209,600 (**14d**). The default is **4d**
 
 ## SNS
 
