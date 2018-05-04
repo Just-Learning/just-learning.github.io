@@ -22,7 +22,7 @@
 - General troubleshooting
 - Best Practices in debugging
 
-## IAM ❗️
+## IAM
 
 !> IAM is global
 
@@ -54,7 +54,7 @@ Roles
 - roles are **global**
 
 
-## EC2 ❗️
+## EC2
 
 ?> [EC2 FAQ](https://aws.amazon.com/ec2/faqs/)
 
@@ -191,7 +191,7 @@ Available SDK
 
 Default Regions = US-EAST-1
 
-## S3 ❗️
+## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
@@ -209,7 +209,7 @@ Features
 - bucket arn: arn:aws:s3:::bucketname
 - static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
 -  bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
-- multi part upload
+- multi part upload (**stop and restart**)
 - HTTP 200 for a successful write
 - **pre-signed** URL with expiration date and time to download private data,
 
@@ -263,8 +263,6 @@ S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations
 
 S3 Static Website: cheap, scales automatically, **static** site only
 
-
-
 ### CloudFront
 
 - Edge Location where content will be cached, separate to Region/AZ, **Read**, **Write**
@@ -273,23 +271,35 @@ S3 Static Website: cheap, scales automatically, **static** site only
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
 
-## DynamoDB ❗️❗️
+## DynamoDB
 
 ### General
 
-?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/)
+?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/) **MUST READ**
 
 - fully managed, can't SSH or RDP
-- store in SSD
-- replicates data across 3 geo distinct data center
+- store in **SSD**
+- replicates data across 3 geographically distributed replicas
+- **schema-less**
+- secondary index on **top-level** json element only
+- query / scan nest json object `ProjectionExpression`
+- can update **sub-element** of a nest json data
+- **no storage limitation and no throughput limitation**
+- **400KB** limitation per item
+- seamless scalability: automatically scales up and scales down
+- Auto Scaling Policy (**free**): based on CloudWatch, can only be set to a **single table** or a global secondary indexes within a **single region**
 
 > pricing by **read** throughput and **write** throughput
 
-Eventual Consistency (default) - read throughput / 2
+### Consistency model of READ
+
+Eventual Consistency (default)
 - consistency across all copies within **1s**
 - best read performance
 
-Strong Consistency - read throughput
+Strong Consistency
+
+!> **1 strongly consistent read or 2 eventual consistent read  requires 1 read capacity unit**
 
 Terms
 - Table
@@ -302,10 +312,10 @@ Terms
 - Partition Key: hash key (like the unique key in relational database)
 - Sort Ke: range key
 
-Single primary key (**partition key**)
+Single-attribute **partition key**
 - partition key (unique)
 
-Composite primary key (**Partition Key + Sort Key**)
+Composite **partition-sort Key**
 - partition key + sort key (unique)
 - 2 items cam have same partition key but must have a different sort key
 - all items w same partition key store in one partition, and sorted by sort key
@@ -313,13 +323,27 @@ Composite primary key (**Partition Key + Sort Key**)
 
 ### Secondary Indexes
 
-local secondary index (LSI)
-- **same** partition key + **different** sort key
-- create at table creation
+- independent throughput management
+- a table CRUD, related GSI consume capacity unit
+- a query on GSI consume the read capacity unit
+- charge by hour - provision throughput, data storage, external transfer
+- query/scan - no order or sort by sort key
+- GSI is available after index creation process
+- reduce the write capacity once index creation process is complete (mins to hours, SNS notification, cannot be cancelled)
+- `DescribeTable`
 
-global secondary index (GSI)
+
+global secondary index (GSI) - eventual consistent
 - **different** partition key + **different** sort key
 - create at table creation or **LATER**
+- a GSI key can be defined on **non-unique** attributes
+- **max 5 GSI**
+
+local secondary index (LSI) - strong consistent
+- in one partition, has to be created at table creation
+- **same** partition key + **different** sort key
+
+> To create one or more local secondary indexes on a table, use the LocalSecondaryIndexes parameter of the CreateTable operation. Local secondary indexes on a table are created when the table is created. When you delete a table, any local secondary indexes on that table are also deleted. **You can only create one secondary index at a time.**
 
 ### Streams
 
@@ -331,9 +355,13 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
-- query using partition key
-- scan: every item, `ProjectionExpression`
-- prefer query over scan
+Query | Scan
+------|------
+using partition key | scan all items or index
+fast | slow
+x |  **1MB** `LastEvaluatedKey`
+x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read
+
 
 ### Provisioned Throughput
 
@@ -363,6 +391,12 @@ capture modifications of DynamoDB
 ?> Q: write 3 items per second to your table, and that the items are 3KB bytes in size
 1. 3 * 3 = 9 units
 
+**Capacity Unit**
+
+- The UpdateTable API call does not use capacity. It is used to change provisioned throughput capacity.
+
+
+
 `ProvisionedThroughputExceededException` HTTP error 400
 
 Authenticate
@@ -371,13 +405,13 @@ Authenticate
 3. your app call `AssumeRoleWithWebIdentity` with token, arn for the IAM role
 4. your app can now access DynamoDB **15m ~ 1hr (default)**
 
-
 Conditional Write
 - by default (PutItem, UpdateItem, DeleteItem) are unconditional
 - concurrency safe
 - idempotent (幂等):send same conditional write request multiple times w/o further effect
+- e.g. conditional expression: `ATTRIBUTE_EXIST CONTAINS BEGIN_WITH` `=, <>, <, >,<=, >=, BETWEEN, IN` `NOT AND OR`
 
-Atomic Counters
+Atomic Increment and Decrement
 - global incremental counter for visits
 - concurrency safe
 
@@ -385,6 +419,31 @@ Batch Operations
 - `BatchGetItem` from one or more tables
 - 16 MB of data, which can contain as many as 100 items
 - `ValidationException` if more than 100 items
+
+Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
+
+### DynamoDB vs Other
+
+DynamoDB | RDS
+---------|----
+key-value and document | relational DB (multiple engines)
+weak query | complex query
+fast | x
+predictable performance | x
+
+
+DynamoDB | SimpleDB
+---------|----
+No SQL | No SQL
+no limit | 10 GB
+scalability | scaling limitations
+large | smaller workload
+
+DynamoDB | S3
+---------|----
+1 byte ~ 400 KB | up to 5TB
+small and fast | large and infrequently access
+
 
 ## SQS
 
@@ -399,6 +458,8 @@ Batch Operations
   - wait until a message is available until timeout
   - max wait time **20s**
 - messages -> SNS -> all subscribed  SQS queues
+- e.g. exceed maximum allowable size, send a reference to a S3 object
+- `MessageRetentionPeriod` attribute to set the message retention period from 60 seconds (**1m**) to 1,209,600 (**14d**). The default is **4d**
 
 ## SNS
 
@@ -450,14 +511,35 @@ SWF vs SQS
 
 ## CloudFormation
 
+?> turn infrastructure into configuration
+
 - *automatic rollback on error*, charge for errors
 - *WaitCondition* wait for resources to be provisioned
-- *FN::GetAtt* to output data
+- use `Fn::GetAtt` to output data
 - *R53* supported, hosted zones / records creation
 - *IAM* role creation
 - default format is *json* / template in json
-- **free** but pay for the resources it provisions
-- error occurs: rollback all resources created onn failure
+- **free** but pay for the resources it provisions, **full root access**
+- error occurs: rollback all resources created on failure
+- can't nested templates
+
+### Template
+
+-  architecture infrastructure diagram
+- `json` or `yaml`
+
+> `Recourses` List of recourses and associated configuration values, **Mandatory**
+
+```yml
+AWSTemplateFormatVersion: 2010-09-09
+Parameters: # input values - name, password, key name, etc,  max 60
+Mappings: # instance type -> arch, arch -> AMI
+Resources: # resources to be created
+Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
+```
+
+### Stack
+- the resources that created
 
 ##  Shared Responsibility
 
@@ -481,7 +563,7 @@ SWF vs SQS
 - e.g. DynamoDB, Lambda
 
 
-##  Route53 ❗️
+##  Route53
 
 > R53 is global like IAM
 
@@ -523,7 +605,9 @@ Tips:
 - Alias vs CNAME
 - choose Alias over CNAME
 
-## VPC ❗️
+## VPC
+
+## Memorize Matrix
 
 ## References
 
