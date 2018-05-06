@@ -26,33 +26,37 @@
 
 !> IAM is global
 
-IAM contains **users**, **groups** (group users and assign policies), **roles**, **policies** in json
-
-IAM
+IAM contains **users**, **groups**,  **roles**, **policies** in json
 - centralized control of your AWS account
-- integrates with existing AD account allowing single sign on (**SSO**)
-  - SSO on ADFS `https://signin.aws.amazon.com/saml`
-  - get SAML from AD (Security Assertion Markup Language)
-  - `AssumeRoleWithSAML`
-- integrated with social media account allowing temporary access (**Web Identity Federation**)
-  - authenticates with facebook
-  - get ID token
-  - `AssumeRoleWithWebIdentity`
 - fine-grained access control to AWS resources
+- group: group users and assign policies), no nested groups
+- New users have NO permissions when first created, can be assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
 
 Tips:
 - `root account` first setup the aws account, full admin access
 - should login as a user
-- user assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
-- always setup multifactor on your root account
-- password rotation policies
+- Use Mutli-Factor Authentication (MFA)
+- Rotate credentials regularly
+- Grant least privilege
+- **CloudTrail** helps us track AWS API calls and transitions, **AWS Config** helps to understand what resources we have now, and **IAM Credential Reports** allows auditing credentials and logins.
 
 Roles
-
-- you can assign rules to an EC2 instance AFTER it has been provisioned.
+- you can assign roles to an EC2 instance AFTER it has been provisioned.
+- you CANNOT add an IAM role to an IAM group
 - roles are easier to manage than user's Access Key ID and Secret Access Key
 - roles are **global**
 
+Temporary Security Credentials
+- via Security Token Service (AWS STS)
+- generated dynamically and provided to the user when requested
+- **SAML**, integrates with existing **AD** account allowing single sign on (**SSO**), steps:
+  - SSO on ADFS `https://signin.aws.amazon.com/saml`
+  - get SAML from AD (Security Assertion Markup Language)
+  - `AssumeRoleWithSAML`
+- **Web Identity Federation**, integrated with **social media account** allowing temporary access, steps:
+  - authenticates with facebook
+  - get ID token
+  - `AssumeRoleWithWebIdentity`
 
 ## EC2
 
@@ -94,9 +98,10 @@ Dedicated Hosts | physical server
 - support for encrypted boot volumes
 - get instance info, e.g. public ip `curl http://169.254.169.254/latest/meta-data/`
 
+> To view all categories of instance metadata from within a running instance, use the following URI: http://169.254.169.254/latest/meta-data/
+
 ### Security Group
 - stateful
-
 
 ### EBS
 
@@ -126,6 +131,8 @@ Instance store-backed instances | Amazon EBS-backed instances
 --------------------------------|-----------------------------
 The root device is temporary. If you stop the instance, the data on the root device vanishes and cannot be recovered. | The root device is an Amazon EBS volume. If you stop the instance, the Amazon EBS volume persists. If you restart the instance, the volume is automatically remounted, restoring the instance state and any stored data. You can also mount the volume on a different instance.
 
+!> EBS-backed instances can be stopped and restarted without losing the data on the volume. In other word, you can't restart a instance-backed instance.
+
 [Take snapshot of a RAID Array](https://aws.amazon.com/premiumsupport/knowledge-center/snapshot-ebs-raid-array/)
 
 
@@ -135,6 +142,7 @@ To create an "application-consistent" snapshot of your RAID array, stop applicat
 
 **regional** must copy to other regions then lunch instance in that region.
 
+`DescribeImages` will list the AMIs available in the current region.
 
 ### CloudWatch
 
@@ -203,17 +211,24 @@ S3 Types
 
 Features
 - **Unlimited** object-based storage whereas EBS is block-based, EFS is Network File System, you can install OS or Apps on S3
-- file size **0 ~ 5TB**
-- largest file using PUT  **5G**
-- Bucket name must be **globally unique** and lower-case
+- accounts can have a maximum of **100 S3 buckets**. However, this number may be increased by contacting AWS.
+- Bucket name must be **globally unique** and **lower-case**
 - bucket arn: arn:aws:s3:::bucketname
 - static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
 -  bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
-- multi part upload (**stop and restart**)
+
 - HTTP 200 for a successful write
 - **pre-signed** URL with expiration date and time to download private data,
 
+> The total volume of data and number of objects you can store are unlimited. Individual Amazon S3 objects can range in size from a minimum of **0 bytes to a maximum of 5 terabytes**. The largest object that can be uploaded in **a single PUT is 5 gigabytes**. For objects larger than **100 megabytes**, customers should consider using the **Multipart Upload** capability.
+
+multi part upload
+- **stop and restart**
+-  **recommended for files greater than 100MB, and is required for files larger than 5GB.**
+- This operation completes a multipart upload by assembling the previously uploaded parts, and does not begin until invoked. The processing of a `CompleteMultipartUpload` request can take several minutes to complete, and your applications should be prepared to retry any failed requests.
+
 Consistency
+- provides eventual consistency for read-after-write.
 - **Read After Write Consistency** for CREATE an object
 - **Eventual Consistency** for UPDATE and DELETE
 
@@ -279,7 +294,7 @@ S3 Static Website: cheap, scales automatically, **static** site only
 
 - fully managed, can't SSH or RDP
 - store in **SSD**
-- replicates data across 3 geographically distributed replicas
+- replicates data across **3** geographically distributed replicas
 - **schema-less**
 - secondary index on **top-level** json element only
 - query / scan nest json object `ProjectionExpression`
@@ -348,9 +363,9 @@ local secondary index (LSI) - strong consistent
 ### Streams
 
 capture modifications of DynamoDB
-- new: entire item
-- update: before and after
-- delete: entire deleted item
+- new: **entire item**
+- update: **before and after**
+- delete: **entire deleted item**
 - data stored for **24hr**
 
 ### Query vs Scan
@@ -395,9 +410,8 @@ x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with
 
 - The UpdateTable API call does not use capacity. It is used to change provisioned throughput capacity.
 
+!> DynamoDB distributes capacity evenly across all available partitions. If a given partition is consuming more than its share of throughput, `ProvisionedThroughputExceededException` will be raised, HTTP error 400
 
-
-`ProvisionedThroughputExceededException` HTTP error 400
 
 Authenticate
 1. authenticates with ID provider (fb, g)
@@ -452,7 +466,7 @@ small and fast | large and infrequently access
 - **PULL**
 - the **1st** service in AWS
 - largest message can be **256kb**
-- default visibility timeout: **30s**, max/**12hr**, can be extended by `ChangeMessageVisibility`
+- default visibility timeout: **30s**, max/**12hr**, can be extended by `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
 - short polling (wait time = 0)
 - long polling (add a message interval)
   - wait until a message is available until timeout
@@ -514,8 +528,9 @@ SWF vs SQS
 ?> turn infrastructure into configuration
 
 - *automatic rollback on error*, charge for errors
+- syntax error failed at template validation. Since the stack will never start creating, there is nothing to roll back.
 - *WaitCondition* wait for resources to be provisioned
-- use `Fn::GetAtt` to output data
+- use `Fn::GetAtt` to output data, called **Intrinsic Function**
 - *R53* supported, hosted zones / records creation
 - *IAM* role creation
 - default format is *json* / template in json
@@ -534,6 +549,7 @@ SWF vs SQS
 AWSTemplateFormatVersion: 2010-09-09
 Parameters: # input values - name, password, key name, etc,  max 60
 Mappings: # instance type -> arch, arch -> AMI
+Conditions: # a production or test environment
 Resources: # resources to be created
 Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
 ```
