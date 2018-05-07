@@ -92,21 +92,32 @@ Dedicated Hosts | physical server
 
 ?> If you terminate the the spot instance, you pay for the hour. If AWS terminates it, you get the hour for free.
 
+- When an EC2 instance is terminated, we do charge for the storage for any Amazon EBS volumes
+- If I have two instances in different availability zones, data transfer is charged at *Data Transfer Out from EC2 to Another AWS Region*  for the first instance and at *Data Transfer In from Another AWS Region* for the second instance
+
 ### EC2 Tips
 - termination protection is turned off by default
 - on EBS-backed instance, root EBS volume to be deleted when instance is terminated by default
 - support for encrypted boot volumes
 - get instance info, e.g. public ip `curl http://169.254.169.254/latest/meta-data/`
+- RDP on Windows TCP port 3389
+- Elastic IP address is a static IPv4
+- For Linux, no password, use key pair to ssh log in. For Windows, use key pair to obtain the administrator password and then log in using RDP
+- if the private key is lost, there is no way to recover the same. have to generate a new one
 
 > To view all categories of instance metadata from within a running instance, use the following URI: http://169.254.169.254/latest/meta-data/
 
 ### Security Group
 - stateful
+- If you create an inbound rule allowing traffic in, that traffic is automatically allowed back out again
 
 ### EBS
 
-Blocked Storage, like virtual disk
+Blocked Storage, like virtual disk, `AttachVolume ` to attach EBS volume to EC2 instance
+
 !> cannot mount 1 EBS volume on multiple EC2 instances, instead use EFS
+
+>  you can now encrypt all your EBS storage, including boot volume
 
 - SSD, General Purpose
 - SSD, Provisioned IOPS
@@ -127,7 +138,7 @@ Cross-Account Copying: You can share the encrypted EBS snapshot
 
 [Instance Store vs EBS](https://aws.amazon.com/premiumsupport/knowledge-center/instance-store-vs-ebs/)
 
-Instance store-backed instances | Amazon EBS-backed instances
+Instance-backed instances | EBS-backed instances
 --------------------------------|-----------------------------
 The root device is temporary. If you stop the instance, the data on the root device vanishes and cannot be recovered. | The root device is an Amazon EBS volume. If you stop the instance, the Amazon EBS volume persists. If you restart the instance, the volume is automatically remounted, restoring the instance state and any stored data. You can also mount the volume on a different instance.
 
@@ -135,8 +146,16 @@ The root device is temporary. If you stop the instance, the data on the root dev
 
 [Take snapshot of a RAID Array](https://aws.amazon.com/premiumsupport/knowledge-center/snapshot-ebs-raid-array/)
 
-
 To create an "application-consistent" snapshot of your RAID array, stop applications from writing to the RAID array, and flush all caches to disk. Then ensure that the associated EC2 instance is no longer writing to the RAID array by taking steps such as **freezing** the file system, **unmounting** the RAID array, or **shutting down** the associated EC2 instance.
+
+
+[Changing the Encryption State of Your Data](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+
+There is no direct way to encrypt an existing unencrypted volume, or to remove encryption from an encrypted volume. However, you can migrate data between encrypted and unencrypted volumes. You can also apply a new encryption status while copying a snapshot:
+- While copying an unencrypted snapshot of an unencrypted volume, you can encrypt the copy. Volumes restored from this encrypted copy are also encrypted.
+- While copying an encrypted snapshot of an encrypted volume, you can associate the copy with a different CMK. Volumes restored from the encrypted copy are only accessible using the newly applied CMK.
+
+You cannot remove encryption from an encrypted snapshot.
 
 ### AMI (Amazon Machine Images)
 
@@ -150,8 +169,9 @@ To create an "application-consistent" snapshot of your RAID array, stop applicat
 - detailed monitoring **1m**
 - dashboards for visual
 - alarms for notification
+- events of state changes
 
-?> CloudWatch is performance monitoring whereas CloudTrail is for auditing
+?> **CloudWatch** is performance monitoring whereas **CloudTrail** is for auditing
 
 ### EFS
 
@@ -170,6 +190,7 @@ To create an "application-consistent" snapshot of your RAID array, stop applicat
 - ELB uses **DNS name** because public IP address might change
 - EC2 instance can get public IP
 - SO in R53, must use **alias** records cause can't resolved by **A** records
+- ELB's IP address keeps changing. You should instead use the DNS name provided to you.
 
 ?> Application Load Balancers now support multiple SSL certificates and Smart Certificate Selection using Server Name Indication (SNI)
 
@@ -198,6 +219,14 @@ Available SDK
 - C++
 
 Default Regions = US-EAST-1
+
+### http status code
+
+1. 1xx Informational responses
+2. 2xx Success
+3. 3xx Redirection
+4. 4xx Client errors
+5. 5xx Server errors
 
 ## S3
 
