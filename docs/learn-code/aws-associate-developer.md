@@ -42,6 +42,8 @@ Tips:
 
 Roles
 - you can assign roles to an EC2 instance AFTER it has been provisioned.
+- best practice: attach an IAM role with xxx access to the EC2 instance
+- Always launch EC2 instance with IAM role instead of hardcoded credentials
 - you CANNOT add an IAM role to an IAM group
 - roles are easier to manage than user's Access Key ID and Secret Access Key
 - roles are **global**
@@ -57,6 +59,9 @@ Temporary Security Credentials
   - authenticates with facebook
   - get ID token
   - `AssumeRoleWithWebIdentity`
+- e.g. App on EC2 to accessing object stored in S3
+  - An IAM **trust policy** allows the EC2 instance to **assume** an EC2 instance role.
+  - An IAM **access policy** allows the EC2 role to access S3 objects
 
 ## EC2
 
@@ -108,8 +113,10 @@ Dedicated Hosts | physical server
 > To view all categories of instance metadata from within a running instance, use the following URI: http://169.254.169.254/latest/meta-data/
 
 ### Security Group
-- stateful
-- If you create an inbound rule allowing traffic in, that traffic is automatically allowed back out again
+- stateful, if you create an inbound rule allowing traffic in, that traffic is automatically allowed back out again
+- You cannot block specific IP addresses using Security Groups, instead use Network Access Control lists
+- You can allow rules, but cannot deny rules
+- You must assign each server to at least 1 security group
 
 ### EBS
 
@@ -232,39 +239,68 @@ Default Regions = US-EAST-1
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
 
-S3 Types
+### S3 Types
 - S3: immediately available, frequent access
-- S3 IA: infrequent access
+- S3 IA: infrequent access, within 30 days will be charged for a full **30 days**
 - S3 RRS: reduced redundancy storage, reproducible data, e.g. thumb nails
-- Glacier: archived data
+- Glacier: archived data, have a minimum of **90 day**s of storage, and objects deleted before 90 days incur a pro-rated charge equal to the storage charge for the remaining.
 
-Features
+### Features
 - **Unlimited** object-based storage whereas EBS is block-based, EFS is Network File System, you can install OS or Apps on S3
+- from 0 to 5 TB, unlimited storage
 - accounts can have a maximum of **100 S3 buckets**. However, this number may be increased by contacting AWS.
-- Bucket name must be **globally unique** and **lower-case**
+- Bucket name must be **globally unique**,  **lower-case**, 3 and 63 characters long
 - bucket arn: arn:aws:s3:::bucketname
 - static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
--  bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
-
+- bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
+- S3 used to store data in alphabetical order
+- HTTP 400 for `MissingSecurityHeader`, `IncompleteBody`, `InvalidBucketName`, `InvalidDigest`
+- HTTP 404 for `NoSuchBucketPolicy`
+- HTTP 409 for conflict issue
 - HTTP 200 for a successful write
-- **pre-signed** URL with expiration date and time to download private data,
+- **pre-signed** URL with expiration date and time to download private data using SDK in code
+- `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
 > The total volume of data and number of objects you can store are unlimited. Individual Amazon S3 objects can range in size from a minimum of **0 bytes to a maximum of 5 terabytes**. The largest object that can be uploaded in **a single PUT is 5 gigabytes**. For objects larger than **100 megabytes**, customers should consider using the **Multipart Upload** capability.
 
-multi part upload
-- **stop and restart**
--  **recommended for files greater than 100MB, and is required for files larger than 5GB.**
-- This operation completes a multipart upload by assembling the previously uploaded parts, and does not begin until invoked. The processing of a `CompleteMultipartUpload` request can take several minutes to complete, and your applications should be prepared to retry any failed requests.
+### Price
+- Storage – cost is per GB/month
+- Requests – per request cost varies depending on the request type GET, PUT
+- Data Transfer
+  - data transfer in is free
+  - data transfer out is charged per GB/month (except in the same region or to Amazon CloudFront)
 
-Consistency
+### Consistency
 - provides eventual consistency for read-after-write.
 - **Read After Write Consistency** for CREATE an object
 - **Eventual Consistency** for UPDATE and DELETE
 
 Object contains *Key, Value, Version ID, Metadata, Access Control List*
 
+###  Management
+
+Lifecycle
+- work with current version and previous version
+- scope: whole or prefix
+- transition: after X days transfer previous version to IA/Glacier
+- expiration: permanently delete after X days or clean up rules
+
+Bucket Policy
+- by default PRIVATE, contained objects are also private
+- modify access permission via Access Control List, Bucket Policy (json), CORS Config (xml)
+- bucket access log
+
+CORS Policy
+- Cross Origin Resource Sharing, e.g. web in one bucket, image in another bucket
+- enable CORS on the bucket where the assets are stored. in **xml** format
+
+Replication
+- Cross-region Replication by default copies only updated or newly added objects. To copy existing content, we use command line:
+
+### Properties
+
 Versioning
-- all version including delete an object
+- stores all versions including delete an object
 - charge on each version
 - easy to backup
 - can be enabled, suspended, can't be disabled
@@ -272,29 +308,24 @@ Versioning
 - MFA on DELETE
 - cross region replication, requires versioning enabled on the source bucket
 
-Lifecycle Management, work with current version and previous version
-- scope: whole or prefix
-- transition: after X days transfer previous version to IA/Glacier
-- expiration: permanently delete after X days or clean up rules
-
-Bucket Security
-- by default PRIVATE
-- modify access permission via Access Control List, Bucket Policy, CORS Config
-- bucket access log
-
-CORS
-- Cross Origin Resource Sharing, e.g. web in one bucket, image in another bucket
-- enable CORS on the bucket where the assets are stored. in **xml** format
-
 Encryption
 - In Transit: SSL/TLS
 - Server Side Encryption
-  - S3 Managed Keys: **SSE-S3** (AES-256)
+  - S3 Managed Keys: **SSE-S3** (AES-256), HTTP header `x-amz-server-side-encryption`
   - AWS Key Management Service, **SSE-KMS**
   - with customer provided keys: **SSE-C**
 - Client Side Encryption: encrypt before uploading to S3
 
-Storage Gateway
+Multi part upload
+- **stop and restart**
+-  **recommended for files greater than 100MB, and is required for files larger than 5GB**
+- The largest object that can be uploaded in a single PUT is **5GB**
+- This operation completes a multipart upload by assembling the previously uploaded parts, and does not begin until invoked. The processing of a `CompleteMultipartUpload` request can take several minutes to complete, and your applications should be prepared to retry any failed requests.
+
+Multi-Object Delete
+- send multiple object keys in a single request to speed up your deletes
+
+### Storage Gateway
 - File Gateway: store flat files directly on  S3
 - Volume Gateway
   - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**
