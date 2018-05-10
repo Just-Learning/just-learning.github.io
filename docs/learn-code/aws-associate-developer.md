@@ -71,29 +71,29 @@ Temporary Security Credentials
 
 [EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/)
 
-\ | Type | Specialty | Use case
------|------|-----------|----------
-General | T | **lowest** cost | web servers/small DBs
-        | M | general purpose | App servers
-CPU | C | compute optimized | CPU intensive Apps/DBs
-GPU | P | **GPU compute** | machine learning, bit coin mining
-    | G | **graphics** intensive | video encoding, 3D app
-    | F | field programmable gate array | hardware acceleration
-Memory | X | RAM **extreme** optimized | SAP HANA/Apache Spark
-       | R | RAM optimized | memory intensive Apps/DBs
-Storage | H | **HHD** high throughput |
-        | I | **SSD** IOPS |
-        | D | dense storage | file server, data warehouse, hadoop
+| \       | Type                          | Specialty                           | Use case                          |
+| ------- | ----------------------------- | ----------------------------------- | --------------------------------- |
+| General | T                             | **lowest** cost                     | web servers/small DBs             |
+| M       | general purpose               | App servers                         |
+| CPU     | C                             | compute optimized                   | CPU intensive Apps/DBs            |
+| GPU     | P                             | **GPU compute**                     | machine learning, bit coin mining |
+| G       | **graphics** intensive        | video encoding, 3D app              |
+| F       | field programmable gate array | hardware acceleration               |
+| Memory  | X                             | RAM **extreme** optimized           | SAP HANA/Apache Spark             |
+| R       | RAM optimized                 | memory intensive Apps/DBs           |
+| Storage | H                             | **HHD** high throughput             |
+| I       | **SSD** IOPS                  |
+| D       | dense storage                 | file server, data warehouse, hadoop |
 
 ### Pricing
 
-Type | Use case
------|---------
-On Demand | spike access on Friday and go down
-Spot | can be interrupted, for testing, analytics
-Reserved | very stable and fix web app, pay upfront to get more discount
-Dedicated Instances |  fully owned EC2 instances
-Dedicated Hosts | physical server
+| Type                | Use case                                                      |
+| ------------------- | ------------------------------------------------------------- |
+| On Demand           | spike access on Friday and go down                            |
+| Spot                | can be interrupted, for testing, analytics                    |
+| Reserved            | very stable and fix web app, pay upfront to get more discount |
+| Dedicated Instances | fully owned EC2 instances                                     |
+| Dedicated Hosts     | physical server                                               |
 
 ?> If you terminate the the spot instance, you pay for the hour. If AWS terminates it, you get the hour for free.
 
@@ -132,12 +132,12 @@ Blocked Storage, like virtual disk, `AttachVolume ` to attach EBS volume to EC2 
 - HDD, Code, **less frequent access**, file servers
 - HDD, Magnetic, cheap
 
-Volumes | Snapshots
---------|----------
-EBS, virtual disk | S3
-take a snapshot of a volume | snapshot is a point-time copy of volume
-block storage | incremental
-encrypted >>> | <<< encrypted
+| Volumes                     | Snapshots                               |
+| --------------------------- | --------------------------------------- |
+| EBS, virtual disk           | S3                                      |
+| take a snapshot of a volume | snapshot is a point-time copy of volume |
+| block storage               | incremental                             |
+| encrypted >>>               | <<< encrypted                           |
 
 Cross-Account Copying: You can share the encrypted EBS snapshot
 
@@ -145,9 +145,9 @@ Cross-Account Copying: You can share the encrypted EBS snapshot
 
 [Instance Store vs EBS](https://aws.amazon.com/premiumsupport/knowledge-center/instance-store-vs-ebs/)
 
-Instance-backed instances | EBS-backed instances
---------------------------------|-----------------------------
-The root device is temporary. If you stop the instance, the data on the root device vanishes and cannot be recovered. | The root device is an Amazon EBS volume. If you stop the instance, the Amazon EBS volume persists. If you restart the instance, the volume is automatically remounted, restoring the instance state and any stored data. You can also mount the volume on a different instance.
+| Instance-backed instances                                                                                             | EBS-backed instances                                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The root device is temporary. If you stop the instance, the data on the root device vanishes and cannot be recovered. | The root device is an Amazon EBS volume. If you stop the instance, the Amazon EBS volume persists. If you restart the instance, the volume is automatically remounted, restoring the instance state and any stored data. You can also mount the volume on a different instance. |
 
 !> EBS-backed instances can be stopped and restarted without losing the data on the volume. In other word, you can't restart a instance-backed instance.
 
@@ -352,8 +352,8 @@ S3 Static Website: cheap, scales automatically, **static** site only
 
 ?> [DynamoDB FAQ](https://aws.amazon.com/dynamodb/faqs/) **MUST READ**
 
+- store in **SSD**, both **document** and **key-value** data models
 - fully managed, can't SSH or RDP
-- store in **SSD**
 - replicates data across **3** geographically distributed replicas
 - **schema-less**
 - secondary index on **top-level** json element only
@@ -364,7 +364,9 @@ S3 Static Website: cheap, scales automatically, **static** site only
 - seamless scalability: automatically scales up and scales down
 - Auto Scaling Policy (**free**): based on CloudWatch, can only be set to a **single table** or a global secondary indexes within a **single region**
 
-> pricing by **read** throughput and **write** throughput
+### Pricing
+- pricing by **read** throughput and **write** throughput
+- storage
 
 ### Consistency model of READ
 
@@ -378,14 +380,13 @@ Strong Consistency
 
 Terms
 - Table
-- Item
-- Attribute
-
+- Item **1 byte ~ 400 KB**
+- Attribute **NO LIMIT**
 
 ### Primary Keys
 
 - Partition Key: hash key (like the unique key in relational database)
-- Sort Ke: range key
+- Sort Key: range key
 
 Single-attribute **partition key**
 - partition key (unique)
@@ -407,16 +408,16 @@ Composite **partition-sort Key**
 - reduce the write capacity once index creation process is complete (mins to hours, SNS notification, cannot be cancelled)
 - `DescribeTable`
 
-
 global secondary index (GSI) - eventual consistent
 - **different** partition key + **different** sort key
 - create at table creation or **LATER**
 - a GSI key can be defined on **non-unique** attributes
 - **max 5 GSI**
 
-local secondary index (LSI) - strong consistent
+local secondary index (LSI) - eventually consistent or strongly consistent
 - in one partition, has to be created at table creation
 - **same** partition key + **different** sort key
+- **max 5 LSI**
 
 > To create one or more local secondary indexes on a table, use the LocalSecondaryIndexes parameter of the CreateTable operation. Local secondary indexes on a table are created when the table is created. When you delete a table, any local secondary indexes on that table are also deleted. **You can only create one secondary index at a time.**
 
@@ -430,15 +431,18 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
-Query | Scan
-------|------
-using partition key | scan all items or index
-fast | slow
-x |  **1MB** `LastEvaluatedKey`
-x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read
+| Query               | Scan                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| by partition key    | scan all items or index, use `ProjectionExpression` parameter so that the Scan only returns some of the attributes |
+| fast                | slow                                                                                                               |
+| x                   | up to **1MB** `LastEvaluatedKey`, **Paginating the Results**                                                       |
+| x                   | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read              |
 
+> A Scan operation always scans the entire table, then filters out values to provide the desired result
 
 ### Provisioned Throughput
+
+Auto Scaling or manually
 
 **Read Capacity Units (RCU)**: (round up to 4K)
 - Strongly Consistent Reads: 1/s
@@ -470,54 +474,76 @@ x | a scan with `ConsistentRead` consumes twice the read capacity as a scan with
 
 - The UpdateTable API call does not use capacity. It is used to change provisioned throughput capacity.
 
-!> DynamoDB distributes capacity evenly across all available partitions. If a given partition is consuming more than its share of throughput, `ProvisionedThroughputExceededException` will be raised, HTTP error 400
-
+!> DynamoDB distributes capacity **evenly across all available partition**s. If a given partition is consuming more than its share of throughput, `ProvisionedThroughputExceededException` will be raised, HTTP error 400
 
 Authenticate
-1. authenticates with ID provider (fb, g)
+1. authenticates with ID provider (facebook, google)
 2. pass a token by ID provider
 3. your app call `AssumeRoleWithWebIdentity` with token, arn for the IAM role
 4. your app can now access DynamoDB **15m ~ 1hr (default)**
 
-Conditional Write
+**Conditional Write**
 - by default (PutItem, UpdateItem, DeleteItem) are unconditional
 - concurrency safe
 - idempotent (幂等):send same conditional write request multiple times w/o further effect
 - e.g. conditional expression: `ATTRIBUTE_EXIST CONTAINS BEGIN_WITH` `=, <>, <, >,<=, >=, BETWEEN, IN` `NOT AND OR`
 
-Atomic Increment and Decrement
+**Atomic Counter**: Increment and Decrement
+- on **scalar values**
 - global incremental counter for visits
 - concurrency safe
 
 Batch Operations
 - `BatchGetItem` from one or more tables
-- 16 MB of data, which can contain as many as 100 items
+- **16 MB** of data, which can contain as many as **100 items**
 - `ValidationException` if more than 100 items
 
 Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
+> To achieve high uptime and durability, Amazon DynamoDB synchronously replicates data across three facilities within an AWS Region.
+
+
 ### DynamoDB vs Other
 
-DynamoDB | RDS
----------|----
-key-value and document | relational DB (multiple engines)
-weak query | complex query
-fast | x
-predictable performance | x
+| DynamoDB                | RDS                              |
+| ----------------------- | -------------------------------- |
+| key-value and document  | relational DB (multiple engines) |
+| weak query              | complex query                    |
+| fast                    | x                                |
+| predictable performance | x                                |
 
 
-DynamoDB | SimpleDB
----------|----
-No SQL | No SQL
-no limit | 10 GB
-scalability | scaling limitations
-large | smaller workload
+| DynamoDB    | SimpleDB            |
+| ----------- | ------------------- |
+| No SQL      | No SQL              |
+| no limit    | 10 GB               |
+| scalability | scaling limitations |
+| large       | smaller workload    |
 
-DynamoDB | S3
----------|----
-1 byte ~ 400 KB | up to 5TB
-small and fast | large and infrequently access
+| DynamoDB        | S3                            |
+| --------------- | ----------------------------- |
+| 1 byte ~ 400 KB | up to 5TB                     |
+| small and fast  | large and infrequently access |
 
+### DynamoDB Cross-region Replication
+- **replicas** of a  master table to be maintained in one or more AWS regions
+- automatically **propagated** to all replicas
+- **1 master table** and one or **n replica tables**
+- Read replicas are updated asynchronously as DynamoDB acknowledges a write operation as successful once it has been accepted by the master table. The write will then be propagated to each replica with a slight delay.
+- Efficient **disaster recovery**, in case a data center failure occurs.
+- Faster reads - delivering data faster by reading a DynamoDB table from the closest AWS data center.
+- distribute the read workload across tables and thereby consume less read capacity in the master table.
+- Easy regional migration, by promoting a read replica to master
+- Live data migration, to replicate data and when the tables are in sync, switch the application to write to the destination region
+- Reading data from DynamoDB Streams to keep the tables in sync.
+
+### DynamoDB Best Practices
+- Keep item size small
+- **Store metadata in DynamoDB and large BLOBs in Amazon S3**
+- Use **conditional** or Optimistic Concurrency Control (**OCC**) updates
+- **Avoid hot keys and hot partitions**, distribute partition evenly
+- **Deleting an entire table** is significantly more efficient than removing items one-by-one
+- **Maximum operations in a single request** — You can specify a total of up to 25 put or delete operations; however, the total request size cannot exceed 1 MB (the HTTP payload).
 
 ## SQS
 
