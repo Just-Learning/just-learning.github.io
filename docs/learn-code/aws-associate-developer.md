@@ -595,6 +595,16 @@ SWF vs SQS
 
 ## Beanstalk
 
+automated infrastructure management and code deployment, by simply uploading, for applications and includes
+- Application platform management
+- Capacity provisioning
+- Load Balancing
+- Auto scaling
+- Code deployment
+- Health Monitoring
+
+AWS resources launched by Elastic Beanstalk are fully accessible i.e. you can ssh into the EC2 instances
+
 - multiple application versions (zip)
 - split in to tiers (web/app/db)
 - update app or config: 1 instance / % instance / immutable
@@ -608,6 +618,49 @@ SWF vs SQS
   - Java SE
   - Docker
   - Go
+
+Q: What AWS products and features can be deployed by Elastic Beanstalk
+A:
+- Auto scaling groups
+- Elastic Load Balancers
+- RDS Instances
+
+### Environment tier
+
+Web server environment
+- An environment tier whose web application processes web requests is known as a web server tier.
+- Every Environment has a **CNAME** url pointing to the ELB, aliased in Route 53 to **ELB** url
+- Each EC2 server instance that runs the application uses a **container** type, which defines the infrastructure topology and software stack
+
+Worker environment:
+- **Daemon** is responsible for pulling requests from an **SQS** queue and then sending the data to the web application running in the worker environment tier that will process those messages
+- An environment tier whose web application runs **background** jobs is known as a worker tier
+- Worker tiers **pull** jobs from SQS
+
+One environment cannot support two different environment tiers because each requires its own set of resources; a worker environment tier and a web server environment tier each require an Auto Scaling group, but Elastic Beanstalk supports only one Auto Scaling group per environment.
+
+Q: You want to have multiple versions of your application running at the same time, with all versions launched via AWS Elastic Beanstalk. Is this possible
+A: AWS Elastic Beanstalk is designed to support a number of multiple running environments
+
+### SQS Dead Letter Queue
+- useful for debugging your application or messaging system
+- creating a queue and configuring a dead-letter queue
+- messages can’t be processed, the message with the order request is sent to a dead-letter queue
+
+### Beanstalk + logs
+- are stored locally on individual instance
+- CloudWatch: stream logs to Amazon **CloudWatch** Logs in real time.
+- On-instance: **Tail and bundle logs** are removed from Amazon S3 15 minutes after they are created.
+- S3:  **persist logs**, you can configure your environment to publish logs to Amazon S3 automatically after they are rotated.
+
+### Beanstalk + RDS
+- It is recommended to launch a database instance outside of the environment and configure the application to connect to it outside of the functionality provided by Elastic Beanstalk.
+- Create your RDS instance separately and pass its DNS name to your app’s DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
+
+### Beanstalk + S3
+- Elastic Beanstalk creates an S3 bucket named elasticbeanstalk-region-account-id for each region in which environments is created.
+- Elastic Beanstalk uses the bucket to store application versions, logs, and other supporting files.
+- It applies a bucket policy to buckets it creates to allow environments to write to the bucket and prevent accidental deletion
 
 ## CloudFormation
 
