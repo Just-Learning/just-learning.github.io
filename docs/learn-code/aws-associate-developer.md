@@ -547,19 +547,36 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 ## SQS
 
-!> can be delivered in multiple times and in any order. **NOT FIFO**
-
-- **PULL**
 - the **1st** service in AWS
-- largest message can be **256kb**
-- default visibility timeout: **30s**, max/**12hr**, can be extended by `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
-- short polling (wait time = 0)
-- long polling (add a message interval)
-  - wait until a message is available until timeout
-  - max wait time **20s**
-- messages -> SNS -> all subscribed  SQS queues
-- e.g. exceed maximum allowable size, send a reference to a S3 object
-- `MessageRetentionPeriod` attribute to set the message retention period from 60 seconds (**1m**) to 1,209,600 (**14d**). The default is **4d**
+- highly available distributed queue system
+- helps build distributed application with decoupled components
+- supports HTTP over SSL (**HTTPS**) and Transport Layer Security (**TLS**)
+- SQS – Fanning Out: Create an SNS topic. Then create and subscribe multiple SQS queues to the SNS topic
+
+### FIFO Queue
+
+- provide **exactly-once** processing
+- have a limited number of transactions per second (TPS)
+- must end with the `.fifo` suffix
+- support up to 300 messages per second
+
+### Standard Queue
+
+- Message Ordering, can be delivered in **multiple times and in any order**
+- **At-Least-Once** Delivery
+
+### Polling
+- `WaitTimeSeconds` parameter of a `ReceiveMessage`, between **1 and 20**
+- **Short Polling** by default (set `WaitTimeSeconds` to 0)
+- **Long Polling** helps reduce the cost (add a message interval), set `WaitTimeSeconds` from **0 ~ 20**
+
+### Limits
+
+- Message attributes: A message can contain up t **10 metadata attributes**.
+- Message batch: A single message batch request can include a maximum of 10 messages
+- Message retention: By default, a message is retained for **4 days**  **1 min~14 day**, `MessageRetentionPeriod`
+- Message size: **256 KB**, **contains a reference to a message payload in Amazon S3**
+- Message visibility timeout: default: **30 seconds**. The maximum is **12 hours**, `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
 
 ## SNS
 
@@ -595,6 +612,16 @@ SWF vs SQS
 
 ## Beanstalk
 
+automated infrastructure management and code deployment, by simply uploading, for applications and includes
+- Application platform management
+- Capacity provisioning
+- Load Balancing
+- Auto scaling
+- Code deployment
+- Health Monitoring
+
+AWS resources launched by Elastic Beanstalk are fully accessible i.e. you can ssh into the EC2 instances
+
 - multiple application versions (zip)
 - split in to tiers (web/app/db)
 - update app or config: 1 instance / % instance / immutable
@@ -608,6 +635,49 @@ SWF vs SQS
   - Java SE
   - Docker
   - Go
+
+Q: What AWS products and features can be deployed by Elastic Beanstalk
+A:
+- Auto scaling groups
+- Elastic Load Balancers
+- RDS Instances
+
+### Environment tier
+
+Web server environment
+- An environment tier whose web application processes web requests is known as a web server tier.
+- Every Environment has a **CNAME** url pointing to the ELB, aliased in Route 53 to **ELB** url
+- Each EC2 server instance that runs the application uses a **container** type, which defines the infrastructure topology and software stack
+
+Worker environment:
+- **Daemon** is responsible for pulling requests from an **SQS** queue and then sending the data to the web application running in the worker environment tier that will process those messages
+- An environment tier whose web application runs **background** jobs is known as a worker tier
+- Worker tiers **pull** jobs from SQS
+
+One environment cannot support two different environment tiers because each requires its own set of resources; a worker environment tier and a web server environment tier each require an Auto Scaling group, but Elastic Beanstalk supports only one Auto Scaling group per environment.
+
+Q: You want to have multiple versions of your application running at the same time, with all versions launched via AWS Elastic Beanstalk. Is this possible
+A: AWS Elastic Beanstalk is designed to support a number of multiple running environments
+
+### SQS Dead Letter Queue
+- useful for debugging your application or messaging system
+- creating a queue and configuring a dead-letter queue
+- messages can’t be processed, the message with the order request is sent to a dead-letter queue
+
+### Beanstalk + logs
+- are stored locally on individual instance
+- CloudWatch: stream logs to Amazon **CloudWatch** Logs in real time.
+- On-instance: **Tail and bundle logs** are removed from Amazon S3 15 minutes after they are created.
+- S3:  **persist logs**, you can configure your environment to publish logs to Amazon S3 automatically after they are rotated.
+
+### Beanstalk + RDS
+- It is recommended to launch a database instance outside of the environment and configure the application to connect to it outside of the functionality provided by Elastic Beanstalk.
+- Create your RDS instance separately and pass its DNS name to your app’s DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
+
+### Beanstalk + S3
+- Elastic Beanstalk creates an S3 bucket named elasticbeanstalk-region-account-id for each region in which environments is created.
+- Elastic Beanstalk uses the bucket to store application versions, logs, and other supporting files.
+- It applies a bucket policy to buckets it creates to allow environments to write to the bucket and prevent accidental deletion
 
 ## CloudFormation
 

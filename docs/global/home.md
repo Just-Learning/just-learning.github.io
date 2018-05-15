@@ -1,16 +1,9 @@
 # Just Learning
 
-
 > This is my personal blog
 
-### where I
+## Where I *learn*, *simplify*, *share*
 
-> - learn
-> - simplify
-> - share
-
-### fun stuff, like
-
-> - data
-> - code
-> - tools
+> #### [Code](./learn-code/readme.md)
+> #### [Tools](./learn-tools/readme.md)
+> #### [Data](./learn-data/readme.md)
