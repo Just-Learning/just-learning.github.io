@@ -547,19 +547,36 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 ## SQS
 
-!> can be delivered in multiple times and in any order. **NOT FIFO**
-
-- **PULL**
 - the **1st** service in AWS
-- largest message can be **256kb**
-- default visibility timeout: **30s**, max/**12hr**, can be extended by `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
-- short polling (wait time = 0)
-- long polling (add a message interval)
-  - wait until a message is available until timeout
-  - max wait time **20s**
-- messages -> SNS -> all subscribed  SQS queues
-- e.g. exceed maximum allowable size, send a reference to a S3 object
-- `MessageRetentionPeriod` attribute to set the message retention period from 60 seconds (**1m**) to 1,209,600 (**14d**). The default is **4d**
+- highly available distributed queue system
+- helps build distributed application with decoupled components
+- supports HTTP over SSL (**HTTPS**) and Transport Layer Security (**TLS**)
+- SQS – Fanning Out: Create an SNS topic. Then create and subscribe multiple SQS queues to the SNS topic
+
+### FIFO Queue
+
+- provide **exactly-once** processing
+- have a limited number of transactions per second (TPS)
+- must end with the `.fifo` suffix
+- support up to 300 messages per second
+
+### Standard Queue
+
+- Message Ordering, can be delivered in **multiple times and in any order**
+- **At-Least-Once** Delivery
+
+### Polling
+- `WaitTimeSeconds` parameter of a `ReceiveMessage`, between **1 and 20**
+- **Short Polling** by default (set `WaitTimeSeconds` to 0)
+- **Long Polling** helps reduce the cost (add a message interval), set `WaitTimeSeconds` from **0 ~ 20**
+
+### Limits
+
+- Message attributes: A message can contain up t **10 metadata attributes**.
+- Message batch: A single message batch request can include a maximum of 10 messages
+- Message retention: By default, a message is retained for **4 days**  **1 min~14 day**, `MessageRetentionPeriod`
+- Message size: **256 KB**, **contains a reference to a message payload in Amazon S3**
+- Message visibility timeout: default: **30 seconds**. The maximum is **12 hours**, `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
 
 ## SNS
 
