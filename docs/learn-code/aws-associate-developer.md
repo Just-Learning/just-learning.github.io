@@ -580,16 +580,41 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 ## SNS
 
-- **PUSH**
-- `publish/subscribe`, publish message and immediately deliver to subscribers
-- subscriber needs confirm the subscription
-- to SMS, email, http/s endpoint, SQS, App
-- **Topic**
-- pay as you go
-- send email json: TopicArn,
-- TTL (undelivered messages will expire)
+### Goals
 
-SQS vs SNS
+- Publishers communicate **asynchronously** with subscribers
+- **decouple** message publishers from subscribers
+- **fan-out** messages to multiple recipients at once
+- **eliminate polling** in your applications
+
+### Features
+
+- `publish/subscribe`, **PUSH** notification to a **Topic**
+- publish to **HTTP, HTTPS, Email, Email-JSON, Amazon SQS, Application, AWS Lambda, SMS**
+- publish **in order**, could result in **out of order** in subscriber side
+- subscriber: needs **confirm** the subscription or **unsubscribe** from a topic
+- pricing: pay as you go
+- TTL (undelivered messages will expire)
+- **retry**: attempts a retry after a failed delivery attempt, **total retries / intervals**
+- default retry:  **3 times** in the backoff phase, w/ **20 seconds** delay between each retry
+- limits: **up to 100 retries** and **max lifetime is 1hr**
+
+### Fanout
+
+```
+Publisher -> SNS Topic -> SQS Queue -> EC2 Instances
+                    |  -> SQS Queue -> EC2 Instances
+                    |  -> SQS Queue -> EC2 Instances
+```
+
+For parallel asynchronous processing
+- e.g. new order, one queue for processing while the other sending to data warehouse
+- e.g. feed production data back to development env for testing on real data
+
+
+### Publish from VPC
+
+### SQS vs SNS
 - both messages services
 - SNS is PUSH
 - SQS is PULL
