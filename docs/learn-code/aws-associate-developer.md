@@ -623,9 +623,18 @@ For parallel asynchronous processing
 
 ## SWF
 
-- Workers to get task, process, return result
-- Decider to control the coordination of tasks
-- Domain as container
+> **coordinate** work across **distributed** components
+
+- **Domain** as container
+- **Actors** can be workflow **starters**, **deciders**, or activity **workers**
+  - **Starter** user submit an order in the website
+  - **Workers** to get task, process and return result
+  - **Decider** to control the coordination of tasks
+- **Tasks** SWF interacts with activity workers and deciders by providing them with work assignments known as tasks. **Data Exchange Between Actors**
+- **SWF** stores tasks and assigns them to workers when they are ready, tracks their progress, and maintains their state, including details on their completion
+
+### Limits
+
 - Max workflow can be **1yr**
 
 !> SWF maintains the execution state. It ensures a task is **assigned only once** and is **never duplicated**
