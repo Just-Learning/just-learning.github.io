@@ -580,16 +580,41 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 ## SNS
 
-- **PUSH**
-- `publish/subscribe`, publish message and immediately deliver to subscribers
-- subscriber needs confirm the subscription
-- to SMS, email, http/s endpoint, SQS, App
-- **Topic**
-- pay as you go
-- send email json: TopicArn,
-- TTL (undelivered messages will expire)
+### Goals
 
-SQS vs SNS
+- Publishers communicate **asynchronously** with subscribers
+- **decouple** message publishers from subscribers
+- **fan-out** messages to multiple recipients at once
+- **eliminate polling** in your applications
+
+### Features
+
+- `publish/subscribe`, **PUSH** notification to a **Topic**
+- publish to **HTTP, HTTPS, Email, Email-JSON, Amazon SQS, Application, AWS Lambda, SMS**
+- publish **in order**, could result in **out of order** in subscriber side
+- subscriber: needs **confirm** the subscription or **unsubscribe** from a topic
+- pricing: pay as you go
+- TTL (undelivered messages will expire)
+- **retry**: attempts a retry after a failed delivery attempt, **total retries / intervals**
+- default retry:  **3 times** in the backoff phase, w/ **20 seconds** delay between each retry
+- limits: **up to 100 retries** and **max lifetime is 1hr**
+
+### Fanout
+
+```
+Publisher -> SNS Topic -> SQS Queue -> EC2 Instances
+                    |  -> SQS Queue -> EC2 Instances
+                    |  -> SQS Queue -> EC2 Instances
+```
+
+For parallel asynchronous processing
+- e.g. new order, one queue for processing while the other sending to data warehouse
+- e.g. feed production data back to development env for testing on real data
+
+
+### Publish from VPC
+
+### SQS vs SNS
 - both messages services
 - SNS is PUSH
 - SQS is PULL
@@ -598,9 +623,49 @@ SQS vs SNS
 
 ## SWF
 
-- Workers to get task, process, return result
-- Decider to control the coordination of tasks
-- Domain as container
+> !! **coordinate** !! work across **distributed** components
+
+**Task = Activity Task** and **Worker = Activity Worker**
+
+### Workflow
+
+> SWF uses deciders and workers to complete tasks
+
+- **Domain** as container, you **register** an activity in Amazon SWF, you provide a **domain**
+- **Actors** can be workflow **starters**, **deciders**, or activity **workers**
+  - **Starter** user submit an order in the website
+  - **Workers** to get task, process and return result
+  - **Decider** to control the coordination of tasks
+- **Tasks** SWF interacts with activity workers and deciders by providing them with work assignments known as tasks. **Data Exchange Between Actors**
+- **SWF** stores tasks and assigns them to workers when they are ready, tracks their progress, and maintains their state, including details on their completion
+
+Workflow
+- the automation of a business process
+- a set of activities that carry out some objective, together with logic that coordinates the activities.
+
+Workflow Execution
+- a running instance of a workflow
+
+Workflow History
+- the state and progress of each workflow execution in its Workflow History
+- your app is stateless as all state is stored in workflow history
+- **Markers** can be used to record information in the workflow history of a workflow execution
+
+> **Workers** and **Deciders** are both stateless
+
+> **long polling**: requests will be held open for up to **60 seconds** if necessary, **to reduce network traffic and unnecessary processing**
+
+### Workflow Implementation & Execution
+1. Implement Activity **workers** with the processing steps in the Workflow.
+2. Implement **Decider** with the coordination logic of the Workflow.
+3. **Register** the Activities and workflow with SWF.
+4. Start the Activity workers and Decider. Once started, the decider and activity workers should start **polling** Amazon SWF for **tasks**.
+5. Start one or more **executions** of the Workflow. Each execution runs **independently** and can be provided with its own set of input data.
+6. When an execution is started, SWF schedules the initial decision task. In response, the decider begins generating decisions which initiate activity tasks. Execution continues until your decider makes a decision to close the execution.
+7. View and Track workflow executions
+
+### Limits
+
 - Max workflow can be **1yr**
 
 !> SWF maintains the execution state. It ensures a task is **assigned only once** and is **never duplicated**
