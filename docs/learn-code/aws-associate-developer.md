@@ -844,6 +844,104 @@ Tips:
 
 ## VPC
 
+### General
+
+- Virtual Private Cloud
+- select **IP address range**, create **subnets**, configure **route tables**, **network gateway**, **security settings**
+- IP address in **CIDR** `10.0.0.0/16`, allows `65536` IP address to be available, `http://cidr.xyz/`
+- allows customers to expand their existing VPCs by adding secondary CIDRs after they have create the VPC with the primary CIDR block
+-
+### CIDR - (Classless Inter-Domain Routing)
+- `8 bits . 8 bits . 8 bits . 8 bits / 8 bits` -> / the routing prefix, turn into a netmask
+- `10.0.0.0/16` count 65535, `255.255.0.0` e.g. large block for a VPC
+- `10.0.0.0/20` count 4096, `255.255.240.0`
+- `10.0.0.0/24` count 256, `255.255.255.0` e.g. small block for a subnet
+- `10.0.0.0/28` count 16, `255.255.255.240`
+
+### Connections
+
+- VPC is separated from any other VPC
+- VPC peering:
+  - communications between my VPCs or others VPC using private IP addresses
+  - in **same region**
+  - **no overlapping** CIDR blocks, e.g. VPC A: `10.0.0.0/16` can peer to VPC B: `10.1.0.0/16`
+  - up to **50** peering connections per VPC
+  - `Dev-Test and Test-Prod != Dev-Prod`, if you want to push code from Dev to Prod, you have to peer Dev and Prod
+- VPC to Corp/Home
+
+### Address
+
+- Private IP: used for communication within VPC
+- Private IP: assigned to all, within the IP address range of the subnet
+- Public IP: auto assigned: subnet setting or enable in EC2 creation
+- Public IP: will be recycled
+- Elastic IP: static and persistent
+- Elastic IP: can be move fron one instance to another, same or different VPC within the same account
+- Elastic IP: $$ for non usage
+
+### Route Table
+
+- Rules: network traffic from the subnet would be routed, for **IGW**, **VPC Peering**, **NAT Device**
+- Each VPC: 1 **default** main route table & n custom route tables
+- **subnet / route table**: `n` subnet <-----> `1` route table
+- Each route table contains a **local route** enables communication within a VPC, cannot be modified / deleted
+- matching **the most specific route** in the route table that matches the traffic
+
+### Subnet
+- belongs to 1 AZ
+- All Subnets in default VPC have a route out to the internet
+
+### IGT (Internet Gateway)
+- EC2 instances to access internet
+- managed service, horizontally scaled, no bandwidth constraints on the network traffic
+- attached to 1 VPC
+
+1. attach **IGW** to VPC
+2. subnet route tables should **route to the IGW**
+3. assign **Public IP or Elastic IP **to the instance
+4. **security group and Network ACL** associated with the instance
+
+### NAT
+- in **public subnet**, w/ **Elastic IP** address, to enable `instances --> internet`, but not the other round
+- private instances need NAT Gateway to perform software updates
+- **NAT Instance**: **disable source/destination check**
+- **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
+
+### Security Group (EC2 instances)
+- firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
+- specify only **Allow rules, but not deny rules**
+- `stateful`, return traffic is automatically allowed
+
+### Network ACL (subnets)
+- firewall for associated subnets, **inbound / outbound** traffic at the **subnet level**, applicable to all the instances in the subnet
+- **Default** and **Newly created** ACL **allows all inbound and outbound traffic**
+- **Allow Rules and Deny Rules**
+- a subnet can be assigned only `1` ACL
+- `stateless`, return traffic must be explicitly allowed by rules
+
+### Examples
+
+
+
+### Limits
+- reserved 5 IPs address (first 4 and last 1 IP address) in each Subnet. e.g. for a Subnet with a CIDR block 10.0.0.0/24 the following five IPs are reserved
+  - 10.0.0.0: Network address
+  - 10.0.0.1: Reserved by AWS for the VPC router
+  - 10.0.0.2: Reserved by AWS for mapping to Amazon-provided DNS
+  - 10.0.0.3: Reserved by AWS for future use
+  - 10.0.0.255: Network broadcast address. AWS does not support broadcast in a VPC, therefore the address is reserved.
+- **VPC per region** = `5`
+- **subnets per VPC** = `200`
+- IPv4 CIDR blocks per VPC = `5`
+- **Elastic IP per region** = `5`
+- IGW per region = `5`
+- NAT Gateways per AZ = `5`
+- Virtual private gateways per region = `5`
+- **Rules per Network ACL** = `20`
+- **Inbound or Outbound Rules per Security Group** = `50`
+- Route table per VPC = `200`
+- VPC peering per VPC = `50`
+
 ## Memorize Matrix
 
 ## References
