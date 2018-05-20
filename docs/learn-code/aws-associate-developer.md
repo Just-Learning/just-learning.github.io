@@ -857,6 +857,10 @@ Tips:
 - `10.0.0.0/20` count 4096, `255.255.240.0`
 - `10.0.0.0/24` count 256, `255.255.255.0` e.g. small block for a subnet
 - `10.0.0.0/28` count 16, `255.255.255.240`
+- recommended CIDR blocks
+    - `10.0.0.0` – `10.255.255.255` (10/8 prefix)
+    - `172.16.0.0` – `172.31.255.255` (172.16/12 prefix)
+    - `192.168.0.0` – `192.168.255.255` (192.168/16 prefix)
 
 ### Connections
 
@@ -906,6 +910,7 @@ Tips:
 - private instances need NAT Gateway to perform software updates
 - **NAT Instance**: **disable source/destination check**
 - **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
+- allows **outbound** communication but doesn’t allow machines on the internet to initiate a connection to the privately addressed instances
 
 ### Security Group (EC2 instances)
 - firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
@@ -916,12 +921,15 @@ Tips:
 - firewall for associated subnets, **inbound / outbound** traffic at the **subnet level**, applicable to all the instances in the subnet
 - **Default** and **Newly created** ACL **allows all inbound and outbound traffic**
 - **Allow Rules and Deny Rules**
-- a subnet can be assigned only `1` ACL
+- a subnet must be associated with **one** Network ACL, if not the subnet is automatically associated with the default network ACL
+- You can associate a network ACL with multiple subnets; however, a subnet can be associated with only one network ACL at a time. `Subnet n----1 ACL`
+- A network ACL contains a numbered list of rules that is evaluated in order, starting with the lowest numbered rule
+- A network ACL has **separate inbound and outbound rules**, and each rule can either **allow or deny** traffic
 - `stateless`, return traffic must be explicitly allowed by rules
 
-### Examples
-
-
+### NAT Vs Bastion
+- A NAT instance is used to provide internet traffic to EC2 instances in private subnets
+- A Bastion is used to securely administer EC2 instances (using SSH or RDP) in private subnets.
 
 ### Limits
 - reserved 5 IPs address (first 4 and last 1 IP address) in each Subnet. e.g. for a Subnet with a CIDR block 10.0.0.0/24 the following five IPs are reserved
