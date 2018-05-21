@@ -4,6 +4,6 @@
 
 Where I *learn*, *simplify*, *share*
 
-> #### [Code](./learn-code/readme.md)
-> #### [Tools](./learn-tools/readme.md)
-> #### [Data](./learn-data/readme.md)
+> #### [Code](../learn-code/readme.md)
+> #### [Tools](../learn-tools/readme.md)
+> #### [Data](../learn-data/readme.md)
