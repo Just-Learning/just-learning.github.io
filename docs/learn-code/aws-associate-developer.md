@@ -804,26 +804,36 @@ Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
 
 > R53 is global like IAM
 
+### Hosted Zones
+
 Simple Policies
+- **link the domain to the web server**
 - example.com / the DNS name of the ELB (alias)
-- 50 50 switch between EC2 instances
 
 Weighted
-- split traffic to multiple resources
+- 50 50 switch between EC2 instances
+- split traffic to multiple resources, 50% to vCurrent, 50% to beta
 
 Latency
 - route based on latency (cross region)
 - route traffic to the resource that provides the best latency.
 
 Failover
+- **active-passive failover**
 - health check the London ELB endpoint
-- 2 records: primary and secondary,
+- 2 records: primary and secondary
+- e.g. set your primary in your region, and a **DR** (disaster recovery) site in another region
 
 Geolocation
+- **by continent or country** (e.g. all Europe traffic go to EU London)
 - route based on geo location (cross region)
 - shift traffic from resources in one location to resources in another.
 
-## DNS
+### Traffic Flow
+- a visual editor to create a traffic policy
+- complex configuration
+
+### DNS
 
 search a public ip by a  domain name
 
@@ -831,20 +841,132 @@ top Level Domains: .com .gov .edu, second level domain name: .com.au, .edu.cn
 
 - SOA Records ()
 - NS Records (**name** server by top level domain servers)
-- A Records (**domain name / ip address**)
+- A Records (**domain name to ip address**)
+- AAAA Records for IPv6
 - TTL (cache, time to live)
-- CNAMES (canonical **domain name / domain name**)
+- CNAMES (canonical **domain name to domain name**)
 - Alias Records (AWS created, easy way to map naked domain name (apex) to **resource record / ELB, CF distribution, S3 bucket**)
 
+```
+NAME                    TYPE   VALUE
+--------------------------------------------------
+bar.example.com.        CNAME  foo.example.com.
+foo.example.com.        A      192.0.2.23
+```
 
 Tips:
-- ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name
+- **ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name**
 - Alias vs CNAME
-- choose Alias over CNAME
+- choose Alias record over CNAME
 
 ## VPC
 
-## Memorize Matrix
+### General
+
+- Virtual Private Cloud
+- select **IP address range**, create **subnets**, configure **route tables**, **network gateway**, **security settings**
+- IP address in **CIDR** `10.0.0.0/16`, allows `65536` IP address to be available, `http://cidr.xyz/`
+- allows customers to expand their existing VPCs by adding secondary CIDRs after they have create the VPC with the primary CIDR block
+-
+### CIDR - (Classless Inter-Domain Routing)
+- `8 bits . 8 bits . 8 bits . 8 bits / 8 bits` -> / the routing prefix, turn into a netmask
+- `10.0.0.0/16` count 65535, `255.255.0.0` e.g. large block for a VPC
+- `10.0.0.0/20` count 4096, `255.255.240.0`
+- `10.0.0.0/24` count 256, `255.255.255.0` e.g. small block for a subnet
+- `10.0.0.0/28` count 16, `255.255.255.240`
+- recommended CIDR blocks
+    - `10.0.0.0` – `10.255.255.255` (10/8 prefix)
+    - `172.16.0.0` – `172.31.255.255` (172.16/12 prefix)
+    - `192.168.0.0` – `192.168.255.255` (192.168/16 prefix)
+
+### Connections
+
+- VPC is separated from any other VPC
+- VPC peering:
+  - communications between my VPCs or others VPC using private IP addresses
+  - in **same region**
+  - **no overlapping** CIDR blocks, e.g. VPC A: `10.0.0.0/16` can peer to VPC B: `10.1.0.0/16`
+  - up to **50** peering connections per VPC
+  - `Dev-Test and Test-Prod != Dev-Prod`, if you want to push code from Dev to Prod, you have to peer Dev and Prod
+- VPC to Corp/Home
+
+### Address
+
+- Private IP: used for communication within VPC
+- Private IP: assigned to all, within the IP address range of the subnet
+- Public IP: auto assigned: subnet setting or enable in EC2 creation
+- Public IP: will be recycled
+- Elastic IP: static and persistent
+- Elastic IP: can be move fron one instance to another, same or different VPC within the same account
+- Elastic IP: $$ for non usage
+
+### Route Table
+
+- Rules: network traffic from the subnet would be routed, for **IGW**, **VPC Peering**, **NAT Device**
+- Each VPC: 1 **default** main route table & n custom route tables
+- **subnet / route table**: `n` subnet <-----> `1` route table
+- Each route table contains a **local route** enables communication within a VPC, cannot be modified / deleted
+- matching **the most specific route** in the route table that matches the traffic
+
+### Subnet
+- belongs to 1 AZ
+- All Subnets in default VPC have a route out to the internet
+
+### IGT (Internet Gateway)
+- EC2 instances to access internet
+- managed service, horizontally scaled, no bandwidth constraints on the network traffic
+- attached to 1 VPC
+
+1. attach **IGW** to VPC
+2. subnet route tables should **route to the IGW**
+3. assign **Public IP or Elastic IP **to the instance
+4. **security group and Network ACL** associated with the instance
+
+### NAT
+- in **public subnet**, w/ **Elastic IP** address, to enable `instances --> internet`, but not the other round
+- private instances need NAT Gateway to perform software updates
+- **NAT Instance**: **disable source/destination check**
+- **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
+- allows **outbound** communication but doesn’t allow machines on the internet to initiate a connection to the privately addressed instances
+
+### Security Group (EC2 instances)
+- firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
+- specify only **Allow rules, but not deny rules**
+- `stateful`, return traffic is automatically allowed
+
+### Network ACL (subnets)
+- firewall for associated subnets, **inbound / outbound** traffic at the **subnet level**, applicable to all the instances in the subnet
+- **Default** and **Newly created** ACL **allows all inbound and outbound traffic**
+- **Allow Rules and Deny Rules**
+- a subnet must be associated with **one** Network ACL, if not the subnet is automatically associated with the default network ACL
+- You can associate a network ACL with multiple subnets; however, a subnet can be associated with only one network ACL at a time. `Subnet n----1 ACL`
+- A network ACL contains a numbered list of rules that is evaluated in order, starting with the lowest numbered rule
+- A network ACL has **separate inbound and outbound rules**, and each rule can either **allow or deny** traffic
+- `stateless`, return traffic must be explicitly allowed by rules
+
+### NAT Vs Bastion
+- A NAT instance is used to provide internet traffic to EC2 instances in private subnets
+- A Bastion is used to securely administer EC2 instances (using SSH or RDP) in private subnets.
+
+### Limits
+- reserved 5 IPs address (first 4 and last 1 IP address) in each Subnet. e.g. for a Subnet with a CIDR block 10.0.0.0/24 the following five IPs are reserved
+  - 10.0.0.0: Network address
+  - 10.0.0.1: Reserved by AWS for the VPC router
+  - 10.0.0.2: Reserved by AWS for mapping to Amazon-provided DNS
+  - 10.0.0.3: Reserved by AWS for future use
+  - 10.0.0.255: Network broadcast address. AWS does not support broadcast in a VPC, therefore the address is reserved.
+- **VPC per region** = `5`
+- **subnets per VPC** = `200`
+- IPv4 CIDR blocks per VPC = `5`
+- **Elastic IP per region** = `5`
+- IGW per region = `5`
+- NAT Gateways per AZ = `5`
+- Virtual private gateways per region = `5`
+- **Rules per Network ACL** = `20`
+- **Inbound or Outbound Rules per Security Group** = `50`
+- Route table per VPC = `200`
+- VPC peering per VPC = `50`
+
 
 ## References
 
