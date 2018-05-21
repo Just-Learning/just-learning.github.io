@@ -804,26 +804,36 @@ Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
 
 > R53 is global like IAM
 
+### Hosted Zones
+
 Simple Policies
+- **link the domain to the web server**
 - example.com / the DNS name of the ELB (alias)
-- 50 50 switch between EC2 instances
 
 Weighted
-- split traffic to multiple resources
+- 50 50 switch between EC2 instances
+- split traffic to multiple resources, 50% to vCurrent, 50% to beta
 
 Latency
 - route based on latency (cross region)
 - route traffic to the resource that provides the best latency.
 
 Failover
+- **active-passive failover**
 - health check the London ELB endpoint
-- 2 records: primary and secondary,
+- 2 records: primary and secondary
+- e.g. set your primary in your region, and a **DR** (disaster recovery) site in another region
 
 Geolocation
+- **by continent or country** (e.g. all Europe traffic go to EU London)
 - route based on geo location (cross region)
 - shift traffic from resources in one location to resources in another.
 
-## DNS
+### Traffic Flow
+- a visual editor to create a traffic policy
+- complex configuration
+
+### DNS
 
 search a public ip by a  domain name
 
@@ -831,16 +841,23 @@ top Level Domains: .com .gov .edu, second level domain name: .com.au, .edu.cn
 
 - SOA Records ()
 - NS Records (**name** server by top level domain servers)
-- A Records (**domain name / ip address**)
+- A Records (**domain name to ip address**)
+- AAAA Records for IPv6
 - TTL (cache, time to live)
-- CNAMES (canonical **domain name / domain name**)
+- CNAMES (canonical **domain name to domain name**)
 - Alias Records (AWS created, easy way to map naked domain name (apex) to **resource record / ELB, CF distribution, S3 bucket**)
 
+```
+NAME                    TYPE   VALUE
+--------------------------------------------------
+bar.example.com.        CNAME  foo.example.com.
+foo.example.com.        A      192.0.2.23
+```
 
 Tips:
-- ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name
+- **ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name**
 - Alias vs CNAME
-- choose Alias over CNAME
+- choose Alias record over CNAME
 
 ## VPC
 
@@ -950,7 +967,6 @@ Tips:
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
 
-## Memorize Matrix
 
 ## References
 
