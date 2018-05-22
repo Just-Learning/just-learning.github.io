@@ -246,13 +246,11 @@ Default Regions = US-EAST-1
 - Glacier: archived data, have a minimum of **90 day**s of storage, and objects deleted before 90 days incur a pro-rated charge equal to the storage charge for the remaining.
 
 ### Features
-- **Unlimited** object-based storage whereas EBS is block-based, EFS is Network File System, you can install OS or Apps on S3
-- from 0 to 5 TB, unlimited storage
-- accounts can have a maximum of **100 S3 buckets**. However, this number may be increased by contacting AWS.
-- Bucket name must be **globally unique**,  **lower-case**, 3 and 63 characters long
-- bucket arn: arn:aws:s3:::bucketname
-- static web hosting: http://**bucketname-website**.s3-website-ap-southeast-2.amazonaws.com
-- bucket url: http://s3-**regionname**.amazonaws.com/**bucketname**
+- **Unlimited** object-based storage whereas EBS is block-based, EFS is Network File System
+- Object contains *Key(name), Value (data), Version ID, Metadata, Access Control List*
+- bucket arn `arn:arn:aws:s3:::bucketname`
+- bucket url: `http://s3-regionname.amazonaws.com/bucketname`
+- static web hosting: `http://bucketname-website.s3-website-ap-southeast-2.amazonaws.com`, cheap, scales automatically, **static** site only
 - S3 used to store data in alphabetical order
 - HTTP 400 for `MissingSecurityHeader`, `IncompleteBody`, `InvalidBucketName`, `InvalidDigest`
 - HTTP 404 for `NoSuchBucketPolicy`
@@ -261,8 +259,14 @@ Default Regions = US-EAST-1
 - **pre-signed** URL with expiration date and time to download private data using SDK in code
 - `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
-> The total volume of data and number of objects you can store are unlimited. Individual Amazon S3 objects can range in size from a minimum of **0 bytes to a maximum of 5 terabytes**. The largest object that can be uploaded in **a single PUT is 5 gigabytes**. For objects larger than **100 megabytes**, customers should consider using the **Multipart Upload** capability.
-
+### Limits
+- single file could be **0 bytes to a maximum of 5TB**
+- **a single PUT is 5GB**
+- **Multipart Upload** preferred if > 100MB, must if > 5GB
+- **globally unique**,  **lower-case**, 3 and 63 characters long
+- CANNOT install OS or Apps on S3
+- max **100 S3 buckets** per account
+-
 ### Price
 - Storage – cost is per GB/month
 - Requests – per request cost varies depending on the request type GET, PUT
@@ -274,8 +278,6 @@ Default Regions = US-EAST-1
 - provides eventual consistency for read-after-write.
 - **Read After Write Consistency** for CREATE an object
 - **Eventual Consistency** for UPDATE and DELETE
-
-Object contains *Key, Value, Version ID, Metadata, Access Control List*
 
 ###  Management
 
@@ -328,19 +330,21 @@ Multi-Object Delete
 ### Storage Gateway
 - File Gateway: store flat files directly on  S3
 - Volume Gateway
-  - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**
-  - In stored mode, store your entire data set locally, while making an asynchronous S3 and point-in-time EBS snapshots.
+  - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**. `(cache partial data on local)`
+  - In stored mode, store your entire data set locally, while making an asynchronous S3 and point-in-time EBS snapshots. `(full copy on local)`
 - Tape Gateway (VTL): for backup
 
-Snowball, Snowball Edge (with compute in the box), Snowmobile (truck) - can **Import** to S3 and **Export** from S3
+### Snowball
+- Snowball
+- Snowball Edge (with compute in the box)
+- Snowmobile (truck)
+- **Import** to S3 and **Export** from S3
 
-S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
-
-S3 Static Website: cheap, scales automatically, **static** site only
 
 ### CloudFront
 
 - Edge Location where content will be cached, separate to Region/AZ, **Read**, **Write**
+- S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
 - Origin: the origin of the files, **S3 Bucket, EC2, LB, R53**
 - Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
 - TTL **24hr** by default
