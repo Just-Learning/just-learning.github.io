@@ -250,7 +250,7 @@ Default Regions = US-EAST-1
 - Object contains *Key(name), Value (data), Version ID, Metadata, Access Control List*
 - bucket arn `arn:arn:aws:s3:::bucketname`
 - bucket url: `http://s3-regionname.amazonaws.com/bucketname`
-- static web hosting: `http://bucketname-website.s3-website-ap-southeast-2.amazonaws.com`, cheap, scales automatically, **static** site only
+- static web hosting: `http://bucketname.s3-website-ap-southeast-2.amazonaws.com`, cheap, scales automatically, **static** site only
 - S3 used to store data in alphabetical order
 - HTTP 400 for `MissingSecurityHeader`, `IncompleteBody`, `InvalidBucketName`, `InvalidDigest`
 - HTTP 404 for `NoSuchBucketPolicy`
@@ -349,6 +349,39 @@ Multi-Object Delete
 - Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
+
+
+## RDS
+
+### RDS vs EC2 hosted
+
+RDS
+- database as a service
+- w/o installing software
+- Amazon takes care of infrastructure, backups, and updates on the DB instance
+- the shell access to the underlying operating system is disabled.
+- log in as privilege user
+- cut off some features
+- **Multi-AZ deployments**
+
+EC2 hosted
+- full control of you DB
+- various EC2 type to fit your requirement
+- manage multi-AZ DB Cluster yourself
+
+### RDS Multi-AZ & RDS Read Replica
+
+Multi-AZ
+- synchronous **standby replica**
+- independent infrastructure in a physically separate location
+- automatically failover support
+
+Read Replica
+- a special type of DB instance called a Read Replica from a source DB instance
+- Read traffic can be rout to Read Replica
+- for read-heavy database
+
+!> Multi-AZ is a High Availability feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
 
 ## DynamoDB
 
