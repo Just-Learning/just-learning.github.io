@@ -352,6 +352,8 @@ Multi-Object Delete
 
 
 ## RDS
+- Provisioned IOPS and DB instance
+- Multi DB engines
 
 ### RDS vs EC2 hosted
 
@@ -369,19 +371,63 @@ EC2 hosted
 - various EC2 type to fit your requirement
 - manage multi-AZ DB Cluster yourself
 
-### RDS Multi-AZ & RDS Read Replica
+### RDS Multi-AZ (high availability)
 
-Multi-AZ
+!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
+
+!> Multi-AZ Standby instance cannot be used as a scaling solution
+
 - synchronous **standby replica**
 - independent infrastructure in a physically separate location
-- automatically failover support
+- may **increase latency** because of sync data replication comparing to Single-AZ
+- minimize **latency spikes** and **I/O freezes** during **system backups**
 
-Read Replica
-- a special type of DB instance called a Read Replica from a source DB instance
-- Read traffic can be rout to Read Replica
-- for read-heavy database
+Creation
+- modify a Single-AZ to a Multi-AZ
+1. take snapshot
+2. restore into another AZ
+3. enable sync replication
 
-!> Multi-AZ is a High Availability feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
+Failover
+- automatically **failover** support w/ **Multi-AZ**
+  - automatically **switches to a standby replica in another AZ**
+  - automatically **changes the DNS record** of the DB instance to point to the standby DB instance.
+  - database operations can be resumed **ASAP** w/o administrative intervention **OUTAGE**
+- Multi-AZ failover trigged by
+  - **AZ outage**
+  - **Primary DB instance fails**
+  - DB instance’s **server type is changed**
+  - OS of the DB instance is undergoing software **patching**
+  - A manual **Forced Failover**
+
+### Read Replica (scale out)
+
+!> Read Replica is used for scale out
+
+- create a **Read Replica** from a source DB instance
+- data are **asynchronously** copied to the Read Replica
+- **Read traffic** can be rout to Read Replica, scale out
+- **uss case: read-heavy, data warehouse, serving while source DB n/a**
+- only allow **read-only connections**
+- secure communications
+- a read replica can be modified to a new source DB, won't impact other replicas
+
+Read Replica Creation
+  1. enable **automatic backups**
+  2. modify existing DB to be the **source**
+  3. take snapshot
+  4. create a **read-only** instance
+  5. enable **async replication**
+  6. **I/O suspension** on the source DB instance as the DB **snapshot** occurs, multiple RR created in parallel from the same source DB instance, only one snapshot is taken at the start of the first create action.
+  7. **I/O suspension** cab be avoided if the source DB instance is a Multi-AZ deployment (in the case of Multi-AZ deployments, DB snapshots are taken from the **standby**).
+- Delete replica explicitly, source DB deletion won't trigger **replica deleting**, replica will run as a standalone
+
+### Limits
+
+- Up tp `5` Read Replica per source DB
+- Read Replica does not support **circular replication**
+- Read Replica support **cross region replication** for some DB engine
+- Read Replica chain < `4`
 
 ## DynamoDB
 
