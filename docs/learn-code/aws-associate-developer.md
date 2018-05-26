@@ -235,6 +235,41 @@ Default Regions = US-EAST-1
 4. 4xx Client errors
 5. 5xx Server errors
 
+## Auto Scaling
+
+> **configure** automatic scaling for the scalable AWS resources.
+> create one scaling plan per application source (a CloudFormation stack or a set of tags).
+
+Scalable resources
+- Aurora DB clusters
+- Auto Scaling groups
+- DynamoDB global secondary indexes
+- DynamoDB tables
+- ECS services
+- Spot Fleet requests
+
+### What is EC2 Auto Scaling
+- **Auto Scaling groups**: create collections of EC2 instances
+- **Launch configuration** as a template for its EC2 instances: AMI, keypair, security group, etc. any new instances launched use the new configuration parameters, but the existing instances are not affected.
+- **Auto Scaling Plan**: minimum/desired/maximum capacity
+- Availability Zones or Subnets
+- Metrics & Health Checks
+- Auto Scaling can **launch or terminate** instances as demand on your application increases or decreases.
+
+![EC2 Autl Scaling](http://tinyimg.io/i/C7ULNnU.png)
+
+### Auto Scaling + Load Balancer
+
+As the Auto Scaling group adds and removes EC2 instances, you must ensure that the traffic for your application is distributed across all of your EC2 instances. The Elastic Load Balancing service automatically routes incoming web traffic across such a dynamically changing number of EC2 instances. Your load balancer acts as a single point of contact for all incoming traffic to the instances in your Auto Scaling group
+
+- `Adding` -> register all instances to Load Balance -> `Added`
+- `InService` at least one registered instance passes the **health checks**
+- Auto Scaling can **terminate and replace** any instances that are reported as **unhealthy**
+- `Removing` state while **deregistering** the instances, **deregistered instances remain running. Manually delete it**
+- `OutOfService`
+
+### Limits
+- Auto Scaling groups could be in **multi AZ but one region**
 ## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
