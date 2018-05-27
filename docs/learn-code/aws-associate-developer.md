@@ -316,6 +316,51 @@ To terminate an instance in an Auto Scaling group
 - Auto Scaling groups could be in **multi AZ but one region**
 - default scaling cooldown period is `300 seconds`
 
+## ELB
+
+> allows the incoming traffic to be distributed automatically across multiple healthy EC2 instances.
+
+- handle the client requests
+- is itself a distributed system that is fault tolerant and actively monitored
+- integration with Auto Scaling
+- **scale up or scale out**
+- works best with **gradual increase** in traffic
+- are engineered to not be a single point of failure
+- work across AZs within a region
+- ELB is scaled automatically handled by AWS
+- Only one subnet per AZ can be attached to the ELB - client facing ELB should be attached to a `Public Subnet`
+
+### Type
+
+Application Load Balancer
+- at the request level (layer 7), routing traffic to targets - EC2 instances, containers and IP addresses based on the content of the request.
+- You can load balance HTTP/HTTPS applications and use layer 7-specific features, such as X-Forwarded-For headers.
+- request level
+
+Network Load Balancer
+- at the connection level (Layer 4), routing connections to targets - Amazon EC2 instances, containers and IP addresses based on IP protocol data.
+- connection level
+
+Classic Load Balancer
+- basic load balancing across multiple Amazon EC2 instances and operates at both the request level and connection level
+- both request and connection level
+
+### Cross Zone
+
+**w/o Cross-Zone**: By default, the load balancer distributes incoming requests evenly across its enabled Availability Zones for e.g. If AZ-a has 5 instances and AZ-b has 2 instances, the load will still be distributed 50% across each of the AZs
+
+![w/o Cross-Zone](http://tinyimg.io/i/xgD36Hp.png)
+
+**w/ Cross-Zone**: Enabling Cross-Zone load balancing allows the ELB to distribute incoming requests evenly across all the back-end instances, regardless of the AZ
+
+![w/ Cross-Zone](http://tinyimg.io/i/QXOuf9u.png)
+
+
+### Health Checks
+- Load balancer performs health checks on all registered instances, whether the instance is in a healthy state or an unhealthy state.
+- Health check is `InService` for status of healthy instances and `OutOfService` for unhealthy ones
+- Load balancer only sends requests to the healthy EC2 instances and stops routing requests to the unhealthy instances
+
 ## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
