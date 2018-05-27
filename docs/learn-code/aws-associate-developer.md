@@ -262,14 +262,60 @@ Scalable resources
 
 As the Auto Scaling group adds and removes EC2 instances, you must ensure that the traffic for your application is distributed across all of your EC2 instances. The Elastic Load Balancing service automatically routes incoming web traffic across such a dynamically changing number of EC2 instances. Your load balancer acts as a single point of contact for all incoming traffic to the instances in your Auto Scaling group
 
+Instance Status in Load Balancer
 - `Adding` -> register all instances to Load Balance -> `Added`
 - `InService` at least one registered instance passes the **health checks**
 - Auto Scaling can **terminate and replace** any instances that are reported as **unhealthy**
 - `Removing` state while **deregistering** the instances, **deregistered instances remain running. Manually delete it**
-- `OutOfService`
+- `OutOfService` will trigger a replacement
+
+What is an unhealthy instance?
+- the instance is `NOT running`
+- the system status is `impaired`
+- ELB reports the instance as `OutOfService`
+
+ELB health check
+- ping instance and check the timeout
+- interval, unhealthy threshold, healthy threshold
+
+Manual scaling
+- **Changing the desired capacity** limit of the Auto Scaling group
+- **Attaching/Detaching instance**s to the Auto Scaling group
+
+Scheduled scaling
+- scale your application in response to predictable load changes, e.g. Black Friday, Financial year
+
+Dynamic scaling
+- scale out/in based on CPU usage, OR base on CloudWatch Alarms
+- **CloudWatch** monitors the specified metrics
+- metrics breaches the **threshold**
+- CloudWatch sends to either the **scale-in** policy or the **scale-out** policy
+- Auto Scaling performs the scaling activity
+
+Scaling Cooldown
+- waiting period until the newly created instance takes effect, default `300` seconds
+
+Termination Policy
+- Controlling Which Auto Scaling Instances Terminate During Scale In
+- `OldestInstance`, `NewestInstance`, `OldestLaunchConfiguration`, `ClosestToNextInstanceHour`, `Default`
+
+Instance Protection
+- To control whether an Auto Scaling group can terminate a particular instance when scaling in
+- `Protect From Scale In`
+
+To terminate an instance in an Auto Scaling group
+- This example terminates the specified instance from the specified Auto Scaling group without updating the size of the group:
+- `aws autoscaling terminate-instance-in-auto-scaling-group --instance-id i-93633f9b --no-should-decrement-desired-capacity`
+- Auto Scaling launches a replacement instance after the specified instance terminates.
+
+`terminate-instance-in-auto-scaling-group`
+
+
 
 ### Limits
 - Auto Scaling groups could be in **multi AZ but one region**
+- default scaling cooldown period is `300 seconds`
+
 ## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
