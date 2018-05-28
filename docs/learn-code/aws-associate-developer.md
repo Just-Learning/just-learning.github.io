@@ -22,6 +22,8 @@
 - General troubleshooting
 - Best Practices in debugging
 
+-------------------------------------------------------------------------------
+
 ## IAM
 
 !> IAM is global
@@ -62,6 +64,8 @@ Temporary Security Credentials
 - e.g. App on EC2 to accessing object stored in S3
   - An IAM **trust policy** allows the EC2 instance to **assume** an EC2 instance role.
   - An IAM **access policy** allows the EC2 role to access S3 objects
+
+-------------------------------------------------------------------------------
 
 ## EC2
 
@@ -235,6 +239,8 @@ Default Regions = US-EAST-1
 4. 4xx Client errors
 5. 5xx Server errors
 
+-------------------------------------------------------------------------------
+
 ## Auto Scaling
 
 > **configure** automatic scaling for the scalable AWS resources.
@@ -316,6 +322,8 @@ To terminate an instance in an Auto Scaling group
 - Auto Scaling groups could be in **multi AZ but one region**
 - default scaling cooldown period is `300 seconds`
 
+-------------------------------------------------------------------------------
+
 ## ELB
 
 > allows the incoming traffic to be distributed automatically across multiple healthy EC2 instances.
@@ -360,6 +368,8 @@ Classic Load Balancer
 - Load balancer performs health checks on all registered instances, whether the instance is in a healthy state or an unhealthy state.
 - Health check is `InService` for status of healthy instances and `OutOfService` for unhealthy ones
 - Load balancer only sends requests to the healthy EC2 instances and stops routing requests to the unhealthy instances
+
+-------------------------------------------------------------------------------
 
 ## S3
 
@@ -476,6 +486,7 @@ Multi-Object Delete
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
 
+-------------------------------------------------------------------------------
 
 ## RDS
 - Provisioned IOPS and DB instance
@@ -554,6 +565,8 @@ Read Replica Creation
 - Read Replica does not support **circular replication**
 - Read Replica support **cross region replication** for some DB engine
 - Read Replica chain < `4`
+
+-------------------------------------------------------------------------------
 
 ## DynamoDB
 
@@ -754,6 +767,8 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - **Deleting an entire table** is significantly more efficient than removing items one-by-one
 - **Maximum operations in a single request** — You can specify a total of up to 25 put or delete operations; however, the total request size cannot exceed 1 MB (the HTTP payload).
 
+-------------------------------------------------------------------------------
+
 ## SQS
 
 - the **1st** service in AWS
@@ -786,6 +801,8 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - Message retention: By default, a message is retained for **4 days**  **1 min~14 day**, `MessageRetentionPeriod`
 - Message size: **256 KB**, **contains a reference to a message payload in Amazon S3**
 - Message visibility timeout: default: **30 seconds**. The maximum is **12 hours**, `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
+
+-------------------------------------------------------------------------------
 
 ## SNS
 
@@ -829,6 +846,8 @@ For parallel asynchronous processing
 - SQS is PULL
 
 > message can be customized for each protocol
+
+-------------------------------------------------------------------------------
 
 ## SWF
 
@@ -883,6 +902,8 @@ SWF vs SQS
 - SWF: task-oriented vs  SQS: message-oriented
 - SWF: task assigned only once and never duplicated vs message delivered in multiple times and in any order
 - SWF: track execution state vs SQS doesn't
+
+-------------------------------------------------------------------------------
 
 ## Beanstalk
 
@@ -952,6 +973,8 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 - Elastic Beanstalk creates an S3 bucket named elasticbeanstalk-region-account-id for each region in which environments is created.
 - Elastic Beanstalk uses the bucket to store application versions, logs, and other supporting files.
 - It applies a bucket policy to buckets it creates to allow environments to write to the bucket and prevent accidental deletion
+
+-------------------------------------------------------------------------------
 
 ## CloudFormation
 
@@ -1066,27 +1089,42 @@ Service Role
 ### Stack
 - the resources that created
 
+-------------------------------------------------------------------------------
+
 ##  Shared Responsibility
 
-### Infrastructure Services
+### Infrastructure Services (EC2, VPC, S3)
 
-- aws
+**aws**: Security of the Cloud
   - foundation: compute, storage, db, networking
   - infrastructure: region, availability zone, edge location
   - e.g. hyper-v: aws patch and reboot
-- customers
-  - IAM
-  - customer data, platform, app management, os, network, firewall config
-  - encryption: client side / server-side, network traffic protection: http/https
 
-### Container Services
+**customers**: Security in the Cloud
+  - **IAM**
+  - **customer data**, platform, app management, os, network, firewall config
+  - **encryption**: client side / server-side, network traffic protection: http/https
+
+### Container Services (RDS, EMR)
 - aws takes care of os, platform and app management, patch os
 - e.g. RDS, EMR
 
-### Abstracted Services
+### Abstracted Services (DynamoDB, Lambda)
 - customer data, client-side encryption
 - e.g. DynamoDB, Lambda
 
+### AWS Security Responsibilities
+- AWS is responsible for protecting the global infrastructure that runs all of the services offered in the AWS cloud. This infrastructure is comprised of the **hardware, software, networking, and facilities that run AWS services.**
+- AWS provide several reports from third-party **auditors** who have verified their compliance with a variety of **computer security standards and regulations**
+- AWS is responsible for the **security configuration** of its products that are considered managed services for e.g. RDS, DynamoDB
+- **Managed Services**: AWS will handle basic security tasks like guest **operating system (OS) and database patching, firewall configuration, and disaster recovery.**
+
+### Customer Security Responsibilities
+- **AWS Infrastructure as a Service** (IaaS) products for e.g. **EC2, VPC, S3** are completely under your control and require you to perform all of the necessary security configuration and management tasks.
+- Management of the **guest OS (including updates and security patches), any application software or utilities installed on the instances**, and the configuration of the **AWS-provided firewall** (called a **security group**) on each instance
+- managed services: all you have to do is configure **logical access controls** for the resources and **protect the account credentials**
+
+-------------------------------------------------------------------------------
 
 ##  Route53
 
@@ -1146,6 +1184,8 @@ Tips:
 - **ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name**
 - Alias vs CNAME
 - choose Alias record over CNAME
+
+-------------------------------------------------------------------------------
 
 ## VPC
 
@@ -1255,6 +1295,7 @@ Tips:
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
 
+-------------------------------------------------------------------------------
 
 ## References
 
