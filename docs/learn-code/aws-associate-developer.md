@@ -955,41 +955,120 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 
 ## CloudFormation
 
-?> turn infrastructure into configuration
+> turn infrastructure into configuration
+> set up the resources consistently and repeatedly over and over across multiple regions
 
-- *automatic rollback on error*, charge for errors
+- provides a set of application **bootstrapping** scripts that enable you to install packages, files, and services on the EC2 instances by simply describing them in the CloudFormation template
+- automatic **rollback** on error is enabled by default, **charge for errors**. Rollback all the changes and terminate all the created services
 - syntax error failed at template validation. Since the stack will never start creating, there is nothing to roll back.
-- *WaitCondition* wait for resources to be provisioned
-- use `Fn::GetAtt` to output data, called **Intrinsic Function**
-- *R53* supported, hosted zones / records creation
-- *IAM* role creation
-- default format is *json* / template in json
-- **free** but pay for the resources it provisions, **full root access**
+- `WaitCondition` wait for resources to be provisioned
+- use `Fn::GetAtt` to output data, called Intrinsic Function
+- `R53` supported, hosted zones / records creation
+- `IAM` role creation
+- default template format is `json`
+- **free but pay for the resources** it provisions, full root access
 - error occurs: rollback all resources created on failure
 - can't nested templates
 
 ### Template
 
--  architecture infrastructure diagram
-- `json` or `yaml`
+- architecture infrastructure diagram
+- json or yaml
 
-> `Recourses` List of recourses and associated configuration values, **Mandatory**
+> `Recourses` List of recourses and associated configuration values, Mandatory
 
 ```yml
-AWSTemplateFormatVersion: 2010-09-09
-Parameters: # input values - name, password, key name, etc,  max 60
-Mappings: # instance type -> arch, arch -> AMI
+Resources:  # A list of AWS resources and their configuration values
+            # CreationPolicy
+            # DeletionPolicy
+            # DependsOn
+            # Metadata
+            # UpdatePolicy
+
+AWSTemplateFormatVersion: # An optional template file format version number
+
+Parameters: # An optional list of template parameters (input values supplied at stack creation time)
+            # AWS::AccountId
+            # AWS::NotificationARNs
+            # AWS::NoValue
+            # AWS::Partition
+            # AWS::Region
+            # AWS::StackId
+            # AWS::StackName
+            # AWS::URLSuffix
+Mappings:   # An optional list of data tables used to lookup static configuration values for e.g., AMI names per AZ
+
 Conditions: # a production or test environment
-Resources: # resources to be created
-Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
+
+Outputs:    # An optional list of output values like public IP address using the `Fn::GetAtt` function
+            # Fn::Base64
+            # Fn::Cidr
+            # Condition Functions
+            # Fn::FindInMap
+            # Fn::GetAtt
+            # Fn::GetAZs
+            # Fn::ImportValue
+            # Fn::Join
+            # Fn::Select
+            # Fn::Split
+            # Fn::Sub
+
+            # Python Helper Script
+            # cfn-init
+            # cfn-signal
+            # cfn-get-metadata
+            # cfn-hup
 ```
+
+### Stack
+
+- the resources that created
+- the end result of an architectural diagram
+
+### Status
+
+- CREATE_COMPLETE
+- UPDATE_IN_PROGRESS
+- UPDATE_COMPLETE
+- UPDATE_FAILED
+- UPDATE_IN_PROGRESS
+- UPDATE_ROLLBACK_COMPLETE
+- **UPDATE_ROLLBACK_IN_PROGRESS**
+- UPDATE_ROLLBACK_COMPLETE
+- DELETE_FAILED
+
+### Change Sets
+
+- Change Sets presents a summary of the **proposed changes** CloudFormation will make when a stack is updated
+- Change sets help check how the changes might impact running resources, especially critical resources, before implementing them
+- A stack goes into the UPDATE_ROLLBACK_FAILED state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue Update Rollback
+
+### Access Control
+
+IAM
+
+- IAM can be applied with CloudFormation to access control for users whether they can view stack templates, create stacks, or delete stacks
+- IAM permissions need to be provided to the user to the AWS services and resources provisioned, when the stack is created
+- Before a stack is created, AWS CloudFormation validates the template to check for IAM resources that it might create
+
+Service Role
+
+- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user’s behalf
+- By default, AWS CloudFormation uses a temporary session that it generates from the **user credentials** for stack operations.
+- For a service role, AWS CloudFormation uses the role’s credentials.
+- When a service role is specified, AWS CloudFormation always uses that role for all operations that are performed on that stack.
+
+### Limits
+- `200` stacks per account
+- template description fields are limited to `4096 characters`
+- up to `60 parameters` and `60 outputs` in a template.
 
 ### Stack
 - the resources that created
 
 ##  Shared Responsibility
 
-#### Infrastructure Services
+### Infrastructure Services
 
 - aws
   - foundation: compute, storage, db, networking
@@ -1000,11 +1079,11 @@ Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
   - customer data, platform, app management, os, network, firewall config
   - encryption: client side / server-side, network traffic protection: http/https
 
-#### Container Services
+### Container Services
 - aws takes care of os, platform and app management, patch os
 - e.g. RDS, EMR
 
-#### Abstracted Services
+### Abstracted Services
 - customer data, client-side encryption
 - e.g. DynamoDB, Lambda
 
