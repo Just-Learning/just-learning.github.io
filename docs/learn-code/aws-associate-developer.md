@@ -42,7 +42,7 @@ Tips:
 - Grant least privilege
 - **CloudTrail** helps us track AWS API calls and transitions, **AWS Config** helps to understand what resources we have now, and **IAM Credential Reports** allows auditing credentials and logins.
 
-Roles
+~~Roles~~
 - you can assign roles to an EC2 instance AFTER it has been provisioned.
 - best practice: attach an IAM role with xxx access to the EC2 instance
 - Always launch EC2 instance with IAM role instead of hardcoded credentials
@@ -64,6 +64,31 @@ Temporary Security Credentials
 - e.g. App on EC2 to accessing object stored in S3
   - An IAM **trust policy** allows the EC2 instance to **assume** an EC2 instance role.
   - An IAM **access policy** allows the EC2 role to access S3 objects
+
+### Credential Types
+
+- Email + Password + MFA -  **Root User Login using web console**
+- Account ID + Name + Password - **IAM User Login using web console**
+- Access Keys (Access Key ID and Secret Access Key) stored in `~/.aws/credential` - **SDK/API/REST/CLI**
+- Key Paris - **SSH to EC2** or **Sign URL for CloudFront**, stored in `~/.ssh/`
+- IAM user could have one or both
+  - `Programmatic access`, Enables an access key ID and secret access key for the **AWS API, CLI, SDK, and other development tools**.
+  - `AWS Management Console access`, Enables a password that allows users to sign-in to the **AWS Management Console**.
+
+### Credential Tips
+
+- Use IAM user for human and role for code
+- Don't save **Access Keys** or **Key Pairs** to EC2 instance or S3
+- **MFA is sort of one-time access credential**
+- Grant **least privilege access**
+- Password policy
+
+### Limits
+
+- `10` groups an IAM user can be a member of
+- `100` groups per region
+- `5000` users
+- `1000` roles per account
 
 -------------------------------------------------------------------------------
 
@@ -817,6 +842,7 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 - `publish/subscribe`, **PUSH** notification to a **Topic**
 - publish to **HTTP, HTTPS, Email, Email-JSON, Amazon SQS, Application, AWS Lambda, SMS**
+- message can be customized for each protocol
 - publish **in order**, could result in **out of order** in subscriber side
 - subscriber: needs **confirm** the subscription or **unsubscribe** from a topic
 - pricing: pay as you go
@@ -828,9 +854,9 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 ### Fanout
 
 ```
-Publisher -> SNS Topic -> SQS Queue -> EC2 Instances
-                    |  -> SQS Queue -> EC2 Instances
-                    |  -> SQS Queue -> EC2 Instances
+Publisher -> SNS Topic -> SQS Queue -> EC2 Instances (Subscriber)
+                    |  -> SQS Queue -> EC2 Instances (Subscriber)
+                    |  -> SQS Queue -> EC2 Instances (Subscriber)
 ```
 
 For parallel asynchronous processing
@@ -842,10 +868,26 @@ For parallel asynchronous processing
 
 ### SQS vs SNS
 - both messages services
-- SNS is PUSH
-- SQS is PULL
+- SNS：send time-critical messages to multiple **subscribers** through a `push` mechanism
+- SQS：a message **queue** service used by distributed applications to exchange messages through a `polling` model, and can be used to **decouple** sending and receiving components
 
-> message can be customized for each protocol
+
+a SNS notification contains Subject and Message
+
+```json
+{
+  "Type" : "Notification",
+  "MessageId" : "63a3f6b6-d533-4a47-aef9-fcf5cf758c76",
+  "TopicArn" : "arn:aws:sns:us-west-2:123456789012:MyTopic",
+  "Subject" : "Testing publish to subscribed queues",
+  "Message" : "Hello world!",
+  "Timestamp" : "2012-03-29T05:12:16.901Z",
+  "SignatureVersion" : "1",
+  "Signature" : "EXAMPLEnTrFPa37tnVO0FF9Iau3MGzjlJLRfySEoWz4uZHSj6ycK4ph71Zmdv0NtJ4dC/El9FOGp3VuvchpaTraNHWhhq/OsN1HVz20zxmF9b88R8GtqjfKB5woZZmz87HiM6CYDTo3l7LMwFT4VU7ELtyaBBafhPTg9O5CnKkg=",
+  "SigningCertURL" : "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem",
+  "UnsubscribeURL" : "https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:MyTopic:c7fe3a54-ab0e-4ec2-88e0-db410a0f2bee"
+}
+```
 
 -------------------------------------------------------------------------------
 
