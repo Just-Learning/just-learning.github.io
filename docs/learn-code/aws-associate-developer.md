@@ -195,9 +195,12 @@ You cannot remove encryption from an encrypted snapshot.
 
 ### AMI (Amazon Machine Images)
 
-**regional** must copy to other regions then lunch instance in that region.
+- **regional** must copy to other regions then lunch instance in that region.
+- AMI can only be used to launch EC2 instances **in the same AWS region as the AMI is stored**
+- `DescribeImages` will list the AMIs available in the current region.
 
-`DescribeImages` will list the AMIs available in the current region.
+> Copy AMI does not copy the permission
+
 
 ### CloudWatch
 
@@ -264,7 +267,40 @@ Default Regions = US-EAST-1
 4. 4xx Client errors
 5. 5xx Server errors
 
--------------------------------------------------------------------------------
+### Instance Lifecycle
+
+
+- Launch
+- connect
+- stop and start: EBS-backed instances. In most cases, we move the instance to a new host computer. Your instance may stay on the same host computer if there are no problems with the host computer.
+- reboot: rebooting an operating system; **the instance remains on the same host**
+- retire
+- terminate
+- recover
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences
+
+### Trouble shooting
+
+Q: EC2 instance immediately terminates:
+- EBS volume limit was reached
+- EBS snapshot is corrupt
+- Instance store-backed is missing required part
+
+Q: `Error: InsufficientInstanceCapacity`
+- AWS does not currently have enough available capacity to service your request
+- retry after a while
+- launch w/o a specific AZ
+- try launch a different instance type
+- buy reserved instance
+
+Q: `Error: Unprotected Private Key File`
+- Keys need to be only **readable** by you
+- chmod 400 ~/.ssh/id_rsa
+- 400 is too low as that makes it non-writable by your own user. 600 is actually recommended as it allows owner read-write not just read.
+
+---------------------------------------------------------------------
+----------
 
 ## Auto Scaling
 
