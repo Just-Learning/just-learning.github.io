@@ -22,6 +22,8 @@
 - General troubleshooting
 - Best Practices in debugging
 
+-------------------------------------------------------------------------------
+
 ## IAM
 
 !> IAM is global
@@ -40,7 +42,7 @@ Tips:
 - Grant least privilege
 - **CloudTrail** helps us track AWS API calls and transitions, **AWS Config** helps to understand what resources we have now, and **IAM Credential Reports** allows auditing credentials and logins.
 
-Roles
+~~Roles~~
 - you can assign roles to an EC2 instance AFTER it has been provisioned.
 - best practice: attach an IAM role with xxx access to the EC2 instance
 - Always launch EC2 instance with IAM role instead of hardcoded credentials
@@ -62,6 +64,33 @@ Temporary Security Credentials
 - e.g. App on EC2 to accessing object stored in S3
   - An IAM **trust policy** allows the EC2 instance to **assume** an EC2 instance role.
   - An IAM **access policy** allows the EC2 role to access S3 objects
+
+### Credential Types
+
+- Email + Password + MFA -  **Root User Login using web console**
+- Account ID + Name + Password - **IAM User Login using web console**
+- Access Keys (Access Key ID and Secret Access Key) stored in `~/.aws/credential` - **SDK/API/REST/CLI**
+- Key Paris - **SSH to EC2** or **Sign URL for CloudFront**, stored in `~/.ssh/`
+- IAM user could have one or both
+  - `Programmatic access`, Enables an access key ID and secret access key for the **AWS API, CLI, SDK, and other development tools**.
+  - `AWS Management Console access`, Enables a password that allows users to sign-in to the **AWS Management Console**.
+
+### Credential Tips
+
+- Use IAM user for human and role for code
+- Don't save **Access Keys** or **Key Pairs** to EC2 instance or S3
+- **MFA is sort of one-time access credential**
+- Grant **least privilege access**
+- Password policy
+
+### Limits
+
+- `10` groups an IAM user can be a member of
+- `100` groups per region
+- `5000` users
+- `1000` roles per account
+
+-------------------------------------------------------------------------------
 
 ## EC2
 
@@ -110,7 +139,7 @@ Temporary Security Credentials
 - For Linux, no password, use key pair to ssh log in. For Windows, use key pair to obtain the administrator password and then log in using RDP
 - if the private key is lost, there is no way to recover the same. have to generate a new one
 
-> To view all categories of instance metadata from within a running instance, use the following URI: http://169.254.169.254/latest/meta-data/
+> To view all categories of instance metadata from **within a running instance**, use the following URI: http://169.254.169.254/latest/meta-data/
 
 ### Security Group
 - stateful, if you create an inbound rule allowing traffic in, that traffic is automatically allowed back out again
@@ -166,9 +195,12 @@ You cannot remove encryption from an encrypted snapshot.
 
 ### AMI (Amazon Machine Images)
 
-**regional** must copy to other regions then lunch instance in that region.
+- **regional** must copy to other regions then lunch instance in that region.
+- AMI can only be used to launch EC2 instances **in the same AWS region as the AMI is stored**
+- `DescribeImages` will list the AMIs available in the current region.
 
-`DescribeImages` will list the AMIs available in the current region.
+> Copy AMI does not copy the permission
+
 
 ### CloudWatch
 
@@ -235,6 +267,176 @@ Default Regions = US-EAST-1
 4. 4xx Client errors
 5. 5xx Server errors
 
+### Instance Lifecycle
+
+
+- Launch
+- connect
+- stop and start: EBS-backed instances. In most cases, we move the instance to a new host computer. Your instance may stay on the same host computer if there are no problems with the host computer.
+- reboot: rebooting an operating system; **the instance remains on the same host**
+- retire
+- terminate
+- recover
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html#lifecycle-differences
+
+### Trouble shooting
+
+Q: EC2 instance immediately terminates:
+- EBS volume limit was reached
+- EBS snapshot is corrupt
+- Instance store-backed is missing required part
+
+Q: `Error: InsufficientInstanceCapacity`
+- AWS does not currently have enough available capacity to service your request
+- retry after a while
+- launch w/o a specific AZ
+- try launch a different instance type
+- buy reserved instance
+
+Q: `Error: Unprotected Private Key File`
+- Keys need to be only **readable** by you
+- chmod 400 ~/.ssh/id_rsa
+- 400 is too low as that makes it non-writable by your own user. 600 is actually recommended as it allows owner read-write not just read.
+
+Q: security groups
+- remove rules `revoke-security-group-ingress` `revoke-security-group-egress`
+- add rules `authorize-security-group-egress` `authorize-security-group-ingress`
+- `ingress`入口
+- `egress` 出口
+-
+-------------------------------------------------------------------------------
+
+## Auto Scaling
+
+> **configure** automatic scaling for the scalable AWS resources.
+> create one scaling plan per application source (a CloudFormation stack or a set of tags).
+
+Scalable resources
+- Aurora DB clusters
+- Auto Scaling groups
+- DynamoDB global secondary indexes
+- DynamoDB tables
+- ECS services
+- Spot Fleet requests
+
+### What is EC2 Auto Scaling
+- **Auto Scaling groups**: create collections of EC2 instances
+- **Launch configuration** as a template for its EC2 instances: AMI, keypair, security group, etc. any new instances launched use the new configuration parameters, but the existing instances are not affected.
+- **Auto Scaling Plan**: minimum/desired/maximum capacity
+- Availability Zones or Subnets
+- Metrics & Health Checks
+- Auto Scaling can **launch or terminate** instances as demand on your application increases or decreases.
+
+![EC2 Autl Scaling](http://tinyimg.io/i/C7ULNnU.png)
+
+### Auto Scaling + Load Balancer
+
+As the Auto Scaling group adds and removes EC2 instances, you must ensure that the traffic for your application is distributed across all of your EC2 instances. The Elastic Load Balancing service automatically routes incoming web traffic across such a dynamically changing number of EC2 instances. Your load balancer acts as a single point of contact for all incoming traffic to the instances in your Auto Scaling group
+
+Instance Status in Load Balancer
+- `Adding` -> register all instances to Load Balance -> `Added`
+- `InService` at least one registered instance passes the **health checks**
+- Auto Scaling can **terminate and replace** any instances that are reported as **unhealthy**
+- `Removing` state while **deregistering** the instances, **deregistered instances remain running. Manually delete it**
+- `OutOfService` will trigger a replacement
+
+What is an unhealthy instance?
+- the instance is `NOT running`
+- the system status is `impaired`
+- ELB reports the instance as `OutOfService`
+
+ELB health check
+- ping instance and check the timeout
+- interval, unhealthy threshold, healthy threshold
+
+Manual scaling
+- **Changing the desired capacity** limit of the Auto Scaling group
+- **Attaching/Detaching instance**s to the Auto Scaling group
+
+Scheduled scaling
+- scale your application in response to predictable load changes, e.g. Black Friday, Financial year
+
+Dynamic scaling
+- scale out/in based on CPU usage, OR base on CloudWatch Alarms
+- **CloudWatch** monitors the specified metrics
+- metrics breaches the **threshold**
+- CloudWatch sends to either the **scale-in** policy or the **scale-out** policy
+- Auto Scaling performs the scaling activity
+
+Scaling Cooldown
+- waiting period until the newly created instance takes effect, default `300` seconds
+
+Termination Policy
+- Controlling Which Auto Scaling Instances Terminate During Scale In
+- `OldestInstance`, `NewestInstance`, `OldestLaunchConfiguration`, `ClosestToNextInstanceHour`, `Default`
+
+Instance Protection
+- To control whether an Auto Scaling group can terminate a particular instance when scaling in
+- `Protect From Scale In`
+
+To terminate an instance in an Auto Scaling group
+- This example terminates the specified instance from the specified Auto Scaling group without updating the size of the group:
+- `aws autoscaling terminate-instance-in-auto-scaling-group --instance-id i-93633f9b --no-should-decrement-desired-capacity`
+- Auto Scaling launches a replacement instance after the specified instance terminates.
+
+`terminate-instance-in-auto-scaling-group`
+
+
+
+### Limits
+- Auto Scaling groups could be in **multi AZ but one region**
+- default scaling cooldown period is `300 seconds`
+
+-------------------------------------------------------------------------------
+
+## ELB
+
+> allows the incoming traffic to be distributed automatically across multiple healthy EC2 instances.
+
+- handle the client requests
+- is itself a distributed system that is fault tolerant and actively monitored
+- integration with Auto Scaling
+- **scale up or scale out**
+- works best with **gradual increase** in traffic
+- are engineered to not be a single point of failure
+- work across AZs within a region
+- ELB is scaled automatically handled by AWS
+- Only one subnet per AZ can be attached to the ELB - client facing ELB should be attached to a `Public Subnet`
+
+### Type
+
+Application Load Balancer
+- at the request level (layer 7), routing traffic to targets - EC2 instances, containers and IP addresses based on the content of the request.
+- You can load balance HTTP/HTTPS applications and use layer 7-specific features, such as X-Forwarded-For headers.
+- request level
+
+Network Load Balancer
+- at the connection level (Layer 4), routing connections to targets - Amazon EC2 instances, containers and IP addresses based on IP protocol data.
+- connection level
+
+Classic Load Balancer
+- basic load balancing across multiple Amazon EC2 instances and operates at both the request level and connection level
+- both request and connection level
+
+### Cross Zone
+
+**w/o Cross-Zone**: By default, the load balancer distributes incoming requests evenly across its enabled Availability Zones for e.g. If AZ-a has 5 instances and AZ-b has 2 instances, the load will still be distributed 50% across each of the AZs
+
+![w/o Cross-Zone](http://tinyimg.io/i/xgD36Hp.png)
+
+**w/ Cross-Zone**: Enabling Cross-Zone load balancing allows the ELB to distribute incoming requests evenly across all the back-end instances, regardless of the AZ
+
+![w/ Cross-Zone](http://tinyimg.io/i/QXOuf9u.png)
+
+
+### Health Checks
+- Load balancer performs health checks on all registered instances, whether the instance is in a healthy state or an unhealthy state.
+- Health check is `InService` for status of healthy instances and `OutOfService` for unhealthy ones
+- Load balancer only sends requests to the healthy EC2 instances and stops routing requests to the unhealthy instances
+
+-------------------------------------------------------------------------------
+
 ## S3
 
 ?> [S3 FAQ](https://aws.amazon.com/s3/faqs/)
@@ -250,13 +452,13 @@ Default Regions = US-EAST-1
 - Object contains *Key(name), Value (data), Version ID, Metadata, Access Control List*
 - bucket arn `arn:arn:aws:s3:::bucketname`
 - bucket url: `http://s3-regionname.amazonaws.com/bucketname`
-- static web hosting: `http://bucketname-website.s3-website-ap-southeast-2.amazonaws.com`, cheap, scales automatically, **static** site only
+- static web hosting: `http://bucketname.s3-website-ap-southeast-2.amazonaws.com`, cheap, scales automatically, **static** site only
 - S3 used to store data in alphabetical order
 - HTTP 400 for `MissingSecurityHeader`, `IncompleteBody`, `InvalidBucketName`, `InvalidDigest`
 - HTTP 404 for `NoSuchBucketPolicy`
 - HTTP 409 for conflict issue
 - HTTP 200 for a successful write
-- **pre-signed** URL with expiration date and time to download private data using SDK in code
+- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`
 - `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
 ### Limits
@@ -349,6 +551,88 @@ Multi-Object Delete
 - Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
+
+-------------------------------------------------------------------------------
+
+## RDS
+- Provisioned IOPS and DB instance
+- Multi DB engines
+
+### RDS vs EC2 hosted
+
+RDS
+- database as a service
+- w/o installing software
+- Amazon takes care of infrastructure, backups, and updates on the DB instance
+- the shell access to the underlying operating system is disabled.
+- log in as privilege user
+- cut off some features
+- **Multi-AZ deployments**
+
+EC2 hosted
+- full control of you DB
+- various EC2 type to fit your requirement
+- manage multi-AZ DB Cluster yourself
+
+### RDS Multi-AZ (high availability)
+
+!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
+
+!> Multi-AZ Standby instance cannot be used as a scaling solution
+
+- synchronous **standby replica**
+- independent infrastructure in a physically separate location
+- may **increase latency** because of sync data replication comparing to Single-AZ
+- minimize **latency spikes** and **I/O freezes** during **system backups**
+
+Creation
+- modify a Single-AZ to a Multi-AZ
+1. take snapshot
+2. restore into another AZ
+3. enable sync replication
+
+Failover
+- automatically **failover** support w/ **Multi-AZ**
+  - automatically **switches to a standby replica in another AZ**
+  - automatically **changes the DNS record** of the DB instance to point to the standby DB instance.
+  - database operations can be resumed **ASAP** w/o administrative intervention **OUTAGE**
+- Multi-AZ failover trigged by
+  - **AZ outage**
+  - **Primary DB instance fails**
+  - DB instance’s **server type is changed**
+  - OS of the DB instance is undergoing software **patching**
+  - A manual **Forced Failover**
+
+### Read Replica (scale out)
+
+!> Read Replica is used for scale out
+
+- create a **Read Replica** from a source DB instance
+- data are **asynchronously** copied to the Read Replica
+- **Read traffic** can be rout to Read Replica, scale out
+- **uss case: read-heavy, data warehouse, serving while source DB n/a**
+- only allow **read-only connections**
+- secure communications
+- a read replica can be modified to a new source DB, won't impact other replicas
+
+Read Replica Creation
+  1. enable **automatic backups**
+  2. modify existing DB to be the **source**
+  3. take snapshot
+  4. create a **read-only** instance
+  5. enable **async replication**
+  6. **I/O suspension** on the source DB instance as the DB **snapshot** occurs, multiple RR created in parallel from the same source DB instance, only one snapshot is taken at the start of the first create action.
+  7. **I/O suspension** cab be avoided if the source DB instance is a Multi-AZ deployment (in the case of Multi-AZ deployments, DB snapshots are taken from the **standby**).
+- Delete replica explicitly, source DB deletion won't trigger **replica deleting**, replica will run as a standalone
+
+### Limits
+
+- Up tp `5` Read Replica per source DB
+- Read Replica does not support **circular replication**
+- Read Replica support **cross region replication** for some DB engine
+- Read Replica chain < `4`
+
+-------------------------------------------------------------------------------
 
 ## DynamoDB
 
@@ -549,6 +833,8 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - **Deleting an entire table** is significantly more efficient than removing items one-by-one
 - **Maximum operations in a single request** — You can specify a total of up to 25 put or delete operations; however, the total request size cannot exceed 1 MB (the HTTP payload).
 
+-------------------------------------------------------------------------------
+
 ## SQS
 
 - the **1st** service in AWS
@@ -582,6 +868,8 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - Message size: **256 KB**, **contains a reference to a message payload in Amazon S3**
 - Message visibility timeout: default: **30 seconds**. The maximum is **12 hours**, `ChangeMessageVisibility`. The visibility timeout is the time during which the message is invisible to workers. If this interval is set to "0", the message will be immediately available for processing.
 
+-------------------------------------------------------------------------------
+
 ## SNS
 
 ### Goals
@@ -595,6 +883,7 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 
 - `publish/subscribe`, **PUSH** notification to a **Topic**
 - publish to **HTTP, HTTPS, Email, Email-JSON, Amazon SQS, Application, AWS Lambda, SMS**
+- message can be customized for each protocol
 - publish **in order**, could result in **out of order** in subscriber side
 - subscriber: needs **confirm** the subscription or **unsubscribe** from a topic
 - pricing: pay as you go
@@ -606,9 +895,9 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 ### Fanout
 
 ```
-Publisher -> SNS Topic -> SQS Queue -> EC2 Instances
-                    |  -> SQS Queue -> EC2 Instances
-                    |  -> SQS Queue -> EC2 Instances
+Publisher -> SNS Topic -> SQS Queue -> EC2 Instances (Subscriber)
+                    |  -> SQS Queue -> EC2 Instances (Subscriber)
+                    |  -> SQS Queue -> EC2 Instances (Subscriber)
 ```
 
 For parallel asynchronous processing
@@ -620,10 +909,28 @@ For parallel asynchronous processing
 
 ### SQS vs SNS
 - both messages services
-- SNS is PUSH
-- SQS is PULL
+- SNS：send time-critical messages to multiple **subscribers** through a `push` mechanism
+- SQS：a message **queue** service used by distributed applications to exchange messages through a `polling` model, and can be used to **decouple** sending and receiving components
 
-> message can be customized for each protocol
+
+a SNS notification contains Subject and Message
+
+```json
+{
+  "Type" : "Notification",
+  "MessageId" : "63a3f6b6-d533-4a47-aef9-fcf5cf758c76",
+  "TopicArn" : "arn:aws:sns:us-west-2:123456789012:MyTopic",
+  "Subject" : "Testing publish to subscribed queues",
+  "Message" : "Hello world!",
+  "Timestamp" : "2012-03-29T05:12:16.901Z",
+  "SignatureVersion" : "1",
+  "Signature" : "EXAMPLEnTrFPa37tnVO0FF9Iau3MGzjlJLRfySEoWz4uZHSj6ycK4ph71Zmdv0NtJ4dC/El9FOGp3VuvchpaTraNHWhhq/OsN1HVz20zxmF9b88R8GtqjfKB5woZZmz87HiM6CYDTo3l7LMwFT4VU7ELtyaBBafhPTg9O5CnKkg=",
+  "SigningCertURL" : "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem",
+  "UnsubscribeURL" : "https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:MyTopic:c7fe3a54-ab0e-4ec2-88e0-db410a0f2bee"
+}
+```
+
+-------------------------------------------------------------------------------
 
 ## SWF
 
@@ -678,6 +985,8 @@ SWF vs SQS
 - SWF: task-oriented vs  SQS: message-oriented
 - SWF: task assigned only once and never duplicated vs message delivered in multiple times and in any order
 - SWF: track execution state vs SQS doesn't
+
+-------------------------------------------------------------------------------
 
 ## Beanstalk
 
@@ -748,61 +1057,157 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 - Elastic Beanstalk uses the bucket to store application versions, logs, and other supporting files.
 - It applies a bucket policy to buckets it creates to allow environments to write to the bucket and prevent accidental deletion
 
+-------------------------------------------------------------------------------
+
 ## CloudFormation
 
-?> turn infrastructure into configuration
+> turn infrastructure into configuration
+> set up the resources consistently and repeatedly over and over across multiple regions
 
-- *automatic rollback on error*, charge for errors
+- provides a set of application **bootstrapping** scripts that enable you to install packages, files, and services on the EC2 instances by simply describing them in the CloudFormation template
+- automatic **rollback** on error is enabled by default, **charge for errors**. Rollback all the changes and terminate all the created services
 - syntax error failed at template validation. Since the stack will never start creating, there is nothing to roll back.
-- *WaitCondition* wait for resources to be provisioned
-- use `Fn::GetAtt` to output data, called **Intrinsic Function**
-- *R53* supported, hosted zones / records creation
-- *IAM* role creation
-- default format is *json* / template in json
-- **free** but pay for the resources it provisions, **full root access**
+- `WaitCondition` wait for resources to be provisioned
+- use `Fn::GetAtt` to output data, called Intrinsic Function
+- `R53` supported, hosted zones / records creation
+- `IAM` role creation
+- default template format is `json`
+- **free but pay for the resources** it provisions, full root access
 - error occurs: rollback all resources created on failure
 - can't nested templates
 
 ### Template
 
--  architecture infrastructure diagram
-- `json` or `yaml`
+- architecture infrastructure diagram
+- json or yaml
 
-> `Recourses` List of recourses and associated configuration values, **Mandatory**
+> `Recourses` List of recourses and associated configuration values, Mandatory
 
 ```yml
-AWSTemplateFormatVersion: 2010-09-09
-Parameters: # input values - name, password, key name, etc,  max 60
-Mappings: # instance type -> arch, arch -> AMI
+Resources:  # A list of AWS resources and their configuration values
+            # CreationPolicy
+            # DeletionPolicy
+            # DependsOn
+            # Metadata
+            # UpdatePolicy
+
+AWSTemplateFormatVersion: # An optional template file format version number
+
+Parameters: # An optional list of template parameters (input values supplied at stack creation time)
+            # AWS::AccountId
+            # AWS::NotificationARNs
+            # AWS::NoValue
+            # AWS::Partition
+            # AWS::Region
+            # AWS::StackId
+            # AWS::StackName
+            # AWS::URLSuffix
+Mappings:   # An optional list of data tables used to lookup static configuration values for e.g., AMI names per AZ
+
 Conditions: # a production or test environment
-Resources: # resources to be created
-Outputs: # output values, e.g. PublicIp, ELB address, can use `Fn::GetAtt`
+
+Outputs:    # An optional list of output values like public IP address using the `Fn::GetAtt` function
+            # Fn::Base64
+            # Fn::Cidr
+            # Condition Functions
+            # Fn::FindInMap
+            # Fn::GetAtt
+            # Fn::GetAZs
+            # Fn::ImportValue
+            # Fn::Join
+            # Fn::Select
+            # Fn::Split
+            # Fn::Sub
+
+            # Python Helper Script
+            # cfn-init
+            # cfn-signal
+            # cfn-get-metadata
+            # cfn-hup
 ```
+
+### Stack
+
+- the resources that created
+- the end result of an architectural diagram
+
+### Status
+
+- CREATE_COMPLETE
+- UPDATE_IN_PROGRESS
+- UPDATE_COMPLETE
+- UPDATE_FAILED
+- UPDATE_IN_PROGRESS
+- UPDATE_ROLLBACK_COMPLETE
+- **UPDATE_ROLLBACK_IN_PROGRESS**
+- UPDATE_ROLLBACK_COMPLETE
+- DELETE_FAILED
+
+### Change Sets
+
+- Change Sets presents a summary of the **proposed changes** CloudFormation will make when a stack is updated
+- Change sets help check how the changes might impact running resources, especially critical resources, before implementing them
+- A stack goes into the UPDATE_ROLLBACK_FAILED state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue Update Rollback
+
+### Access Control
+
+IAM
+
+- IAM can be applied with CloudFormation to access control for users whether they can view stack templates, create stacks, or delete stacks
+- IAM permissions need to be provided to the user to the AWS services and resources provisioned, when the stack is created
+- Before a stack is created, AWS CloudFormation validates the template to check for IAM resources that it might create
+
+Service Role
+
+- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user’s behalf
+- By default, AWS CloudFormation uses a temporary session that it generates from the **user credentials** for stack operations.
+- For a service role, AWS CloudFormation uses the role’s credentials.
+- When a service role is specified, AWS CloudFormation always uses that role for all operations that are performed on that stack.
+
+### Limits
+- `200` stacks per account
+- template description fields are limited to `4096 characters`
+- up to `60 parameters` and `60 outputs` in a template.
 
 ### Stack
 - the resources that created
 
+-------------------------------------------------------------------------------
+
 ##  Shared Responsibility
 
-#### Infrastructure Services
+### Infrastructure Services (EC2, VPC, S3)
 
-- aws
+**aws**: Security of the Cloud
   - foundation: compute, storage, db, networking
   - infrastructure: region, availability zone, edge location
   - e.g. hyper-v: aws patch and reboot
-- customers
-  - IAM
-  - customer data, platform, app management, os, network, firewall config
-  - encryption: client side / server-side, network traffic protection: http/https
 
-#### Container Services
+**customers**: Security in the Cloud
+  - **IAM**
+  - **customer data**, platform, app management, os, network, firewall config
+  - **encryption**: client side / server-side, network traffic protection: http/https
+
+### Container Services (RDS, EMR)
 - aws takes care of os, platform and app management, patch os
 - e.g. RDS, EMR
 
-#### Abstracted Services
+### Abstracted Services (DynamoDB, Lambda)
 - customer data, client-side encryption
 - e.g. DynamoDB, Lambda
 
+### AWS Security Responsibilities
+- AWS is responsible for protecting the global infrastructure that runs all of the services offered in the AWS cloud. This infrastructure is comprised of the **hardware, software, networking, and facilities that run AWS services.**
+- AWS provide several reports from third-party **auditors** who have verified their compliance with a variety of **computer security standards and regulations**
+- AWS is responsible for the **security configuration** of its products that are considered managed services for e.g. RDS, DynamoDB
+- **Managed Services**: AWS will handle basic security tasks like guest **operating system (OS) and database patching, firewall configuration, and disaster recovery.**
+
+### Customer Security Responsibilities
+- **AWS Infrastructure as a Service** (IaaS) products for e.g. **EC2, VPC, S3** are completely under your control and require you to perform all of the necessary security configuration and management tasks.
+- Management of the **guest OS (including updates and security patches), any application software or utilities installed on the instances**, and the configuration of the **AWS-provided firewall** (called a **security group**) on each instance
+- managed services: all you have to do is configure **logical access controls** for the resources and **protect the account credentials**
+
+-------------------------------------------------------------------------------
 
 ##  Route53
 
@@ -862,6 +1267,8 @@ Tips:
 - **ELB do not have pre-defined IPv4 addresses, to resolve using a DNS name**
 - Alias vs CNAME
 - choose Alias record over CNAME
+
+-------------------------------------------------------------------------------
 
 ## VPC
 
@@ -971,6 +1378,7 @@ Tips:
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
 
+-------------------------------------------------------------------------------
 
 ## References
 
