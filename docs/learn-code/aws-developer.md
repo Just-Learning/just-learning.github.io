@@ -139,7 +139,7 @@ Temporary Security Credentials
 - For Linux, no password, use key pair to ssh log in. For Windows, use key pair to obtain the administrator password and then log in using RDP
 - if the private key is lost, there is no way to recover the same. have to generate a new one
 
-> To view all categories of instance metadata from within a running instance, use the following URI: http://169.254.169.254/latest/meta-data/
+> To view all categories of instance metadata from **within a running instance**, use the following URI: http://169.254.169.254/latest/meta-data/
 
 ### Security Group
 - stateful, if you create an inbound rule allowing traffic in, that traffic is automatically allowed back out again
@@ -299,8 +299,13 @@ Q: `Error: Unprotected Private Key File`
 - chmod 400 ~/.ssh/id_rsa
 - 400 is too low as that makes it non-writable by your own user. 600 is actually recommended as it allows owner read-write not just read.
 
----------------------------------------------------------------------
-----------
+Q: security groups
+- remove rules `revoke-security-group-ingress` `revoke-security-group-egress`
+- add rules `authorize-security-group-egress` `authorize-security-group-ingress`
+- `ingress`入口
+- `egress` 出口
+-
+-------------------------------------------------------------------------------
 
 ## Auto Scaling
 
@@ -453,7 +458,7 @@ Classic Load Balancer
 - HTTP 404 for `NoSuchBucketPolicy`
 - HTTP 409 for conflict issue
 - HTTP 200 for a successful write
-- **pre-signed** URL with expiration date and time to download private data using SDK in code
+- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`
 - `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
 ### Limits
