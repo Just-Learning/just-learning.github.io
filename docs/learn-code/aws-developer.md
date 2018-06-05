@@ -24,6 +24,15 @@
 
 -------------------------------------------------------------------------------
 
+## AWS account
+
+AWS assigns two unique IDs to each
+- An AWS account ID, a 12 digit number, 123456789012, use to construct arn
+- A canonical user ID, a long string, 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be, ues to S3 Bucket Policy
+
+-------------------------------------------------------------------------------
+
+
 ## IAM
 
 !> IAM is global
@@ -33,6 +42,8 @@ IAM contains **users**, **groups**,  **roles**, **policies** in json
 - fine-grained access control to AWS resources
 - group: group users and assign policies), no nested groups
 - New users have NO permissions when first created, can be assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
+
+
 
 Tips:
 - `root account` first setup the aws account, full admin access
