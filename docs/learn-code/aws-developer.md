@@ -512,6 +512,35 @@ CORS Policy
 Replication
 - Cross-region Replication by default copies only updated or newly added objects. To copy existing content, we use command line:
 
+### IAM policies, S3 bucket policies, S3 ACLs
+
+https://aws.amazon.com/blogs/security/iam-policies-and-bucket-policies-and-acls-oh-my-controlling-access-to-s3-resources/
+
+IAM policies and S3 bucket policies - ACL language in json, allow or deny
+
+IAM policies
+- json, principles that **allow/deny** the access on arn
+- centralized permissions, instead of spreading them between IAM and S3.
+- a large number of S3 bucket policies
+
+S3 bucket policies
+- json, principles that **allow/deny** the access on arn
+- if you want a simple way to grant cross-account access to your S3 environment, without using IAM roles.
+- prefer to keep access control policies in the S3
+
+S3 ACLs (access control list)
+- basic **read/write permissions**
+- your account, other aws canonical user id, public access,
+- a legacy access control mechanism that predates IAM
+- apply policies on the **bucket** and **objects**
+- **Bucket and object permissions are independent of each other**
+- An object does not inherit the permissions from its bucket.
+
+
+**least-privilege,**
+- union of all the IAM policies, S3 bucket policies, and S3 ACLs that apply.
+
+
 ### Properties
 
 Versioning
@@ -545,7 +574,7 @@ Multi-Object Delete
 - Volume Gateway
   - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**. `(cache partial data on local)`
   - In stored mode, store your entire data set locally, while making an asynchronous S3 and point-in-time EBS snapshots. `(full copy on local)`
-- Tape Gateway (VTL): for backup
+- Tape Gateway (VTL): for bakup
 
 ### Snowball
 - Snowball
