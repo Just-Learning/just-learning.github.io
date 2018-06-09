@@ -469,7 +469,7 @@ Classic Load Balancer
 - HTTP 404 for `NoSuchBucketPolicy`
 - HTTP 409 for conflict issue
 - HTTP 200 for a successful write
-- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`
+- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`, default expires in `1 hr`
 - `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
 ### Limits
@@ -478,8 +478,8 @@ Classic Load Balancer
 - **Multipart Upload** preferred if > 100MB, must if > 5GB
 - **globally unique**,  **lower-case**, 3 and 63 characters long
 - CANNOT install OS or Apps on S3
-- max **100 S3 buckets** per account
--
+- max `100` S3 buckets per account
+
 ### Price
 - Storage – cost is per GB/month
 - Requests – per request cost varies depending on the request type GET, PUT
@@ -586,11 +586,17 @@ Multi-Object Delete
 ### CloudFront
 
 - Edge Location where content will be cached, separate to Region/AZ, **Read**, **Write**
-- S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
+- S3 Transfer Acceleration: use CloudFront's globally distributed edge locations, data -> Edge Location -> S3 Bucket
 - Origin: the origin of the files, **S3 Bucket, EC2, LB, R53**
 - Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
+
+
+### High Request rate
+
+> If you anticipate that your workload will consistently exceed `100` requests per second, you should **avoid sequential key** names. If you must use sequential numbers or date and time patterns in key names, add a `random prefix` to the key name. The randomness of the prefix more evenly distributes key names across multiple index partitions.
+
 
 -------------------------------------------------------------------------------
 
@@ -616,7 +622,7 @@ EC2 hosted
 
 ### RDS Multi-AZ (high availability)
 
-!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
+!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can't be used to serve read traffic. To service read-only traffic, use a Read Replica.
 
 !> Multi-AZ Standby instance cannot be used as a scaling solution
 
@@ -639,7 +645,7 @@ Failover
 - Multi-AZ failover trigged by
   - **AZ outage**
   - **Primary DB instance fails**
-  - DB instance’s **server type is changed**
+  - DB instance's **server type is changed**
   - OS of the DB instance is undergoing software **patching**
   - A manual **Forced Failover**
 
@@ -693,8 +699,10 @@ Read Replica Creation
 - Auto Scaling Policy (**free**): based on CloudWatch, can only be set to a **single table** or a global secondary indexes within a **single region**
 
 ### Pricing
-- pricing by **read** throughput and **write** throughput
-- storage
+- $ **read** throughput
+- $ **write** throughput
+- $ storage
+- free I/O usage within the same region
 
 ### Consistency model of READ
 
@@ -767,6 +775,11 @@ capture modifications of DynamoDB
 | x                   | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read              |
 
 > A Scan operation always scans the entire table, then filters out values to provide the desired result
+
+Avoid large Query and Scan
+
+- Reduce page size, both query and size, limit, by default is 1 MB
+- Isolate scan operations, two tables
 
 ### Provisioned Throughput
 
@@ -1055,10 +1068,15 @@ AWS resources launched by Elastic Beanstalk are fully accessible i.e. you can ss
   - Go
 
 Q: What AWS products and features can be deployed by Elastic Beanstalk
-A:
+
 - Auto scaling groups
 - Elastic Load Balancers
 - RDS Instances
+
+### Environment Types
+
+- load-balancing, auto-scaling environment
+- a single-instance environment.
 
 ### Environment tier
 
@@ -1067,7 +1085,7 @@ Web server environment
 - Every Environment has a **CNAME** url pointing to the ELB, aliased in Route 53 to **ELB** url
 - Each EC2 server instance that runs the application uses a **container** type, which defines the infrastructure topology and software stack
 
-Worker environment:
+Worker environment
 - **Daemon** is responsible for pulling requests from an **SQS** queue and then sending the data to the web application running in the worker environment tier that will process those messages
 - An environment tier whose web application runs **background** jobs is known as a worker tier
 - Worker tiers **pull** jobs from SQS
@@ -1080,7 +1098,7 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 ### SQS Dead Letter Queue
 - useful for debugging your application or messaging system
 - creating a queue and configuring a dead-letter queue
-- messages can’t be processed, the message with the order request is sent to a dead-letter queue
+- messages can't be processed, the message with the order request is sent to a dead-letter queue
 
 ### Beanstalk + logs
 - are stored locally on individual instance
@@ -1090,7 +1108,7 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 
 ### Beanstalk + RDS
 - It is recommended to launch a database instance outside of the environment and configure the application to connect to it outside of the functionality provided by Elastic Beanstalk.
-- Create your RDS instance separately and pass its DNS name to your app’s DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
+- Create your RDS instance separately and pass its DNS name to your app's DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
 
 ### Beanstalk + S3
 - Elastic Beanstalk creates an S3 bucket named elasticbeanstalk-region-account-id for each region in which environments is created.
@@ -1199,9 +1217,9 @@ IAM
 
 Service Role
 
-- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user’s behalf
+- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user's behalf
 - By default, AWS CloudFormation uses a temporary session that it generates from the **user credentials** for stack operations.
-- For a service role, AWS CloudFormation uses the role’s credentials.
+- For a service role, AWS CloudFormation uses the role's credentials.
 - When a service role is specified, AWS CloudFormation always uses that role for all operations that are performed on that stack.
 
 ### Limits
@@ -1378,7 +1396,7 @@ Tips:
 - private instances need NAT Gateway to perform software updates
 - **NAT Instance**: **disable source/destination check**
 - **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
-- allows **outbound** communication but doesn’t allow machines on the internet to initiate a connection to the privately addressed instances
+- allows **outbound** communication but doesn't allow machines on the internet to initiate a connection to the privately addressed instances
 
 ### Security Group (EC2 instances)
 - firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
