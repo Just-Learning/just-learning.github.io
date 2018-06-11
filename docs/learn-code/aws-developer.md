@@ -1387,6 +1387,8 @@ Tips:
 - Elastic IP: can be move fron one instance to another, same or different VPC within the same account
 - Elastic IP: $$ for non usage
 
+> Customers can add the secondary CIDR blocks to the VPC directly from the console or by using the CLI after they have created the VPC with the primary CIDR block.
+
 ### Route Table
 
 - Rules: network traffic from the subnet would be routed, for **IGW**, **VPC Peering**, **NAT Device**
@@ -1453,6 +1455,54 @@ Tips:
 - **Inbound or Outbound Rules per Security Group** = `50`
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
+
+
+### VPC Scenario - single public subnet
+
+### VPC Scenario - public and private subnets (NAT)
+
+**Custom Route Table** - public subnet
+- Destination,	Target
+- 10.0.0.0/16, local *in-vpc communication*
+- 0.0.0.0/0, igw-id *access internet via IGW*
+
+WebServer Security Group - public subnet
+- Specify this security group when you launch the web servers in the public subnet.
+- allow the web servers to receive Internet traffic `port 80 / 443` and send traffic to the Internet (**request + response**)
+- allow SSH and RDP traffic from your network `port 3306`
+- read and write requests to the database servers in the private subnet
+
+- Inbound (**source**) **web server + SSH/RDP** *source can access me*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow inbound HTTP/S access to the web servers from any IPv4 address.
+  - home network, TCP, `22`/`3389`, SSh Linux / RDP Windows
+- Outbound (**destination**) **web server + DB access** *I can access destination*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow outbound HTTP/S access to any IPv4 address.
+  - `DBServerSG`, TCP, 1433, SQL Server
+  - `DBServerSG`, TCP, 3306, MySQL
+
+**Main Route Table** - private subnet
+- Destination	Target
+- 10.0.0.0/16, local *in-vpc communication*
+- 0.0.0.0/0, nat-gateway-id *access internet via NAT*
+
+
+DBServer Security Group - private subnet
+- Specify this security group when you launch the database servers in the private subnet.
+
+- InBounce (**source**) **Web Server read DB** *source can access me*
+  - WebServerSG, TCP, `1433`/`3306`, SQL Server / MySQL
+- Outbound (**destination**) **web server + DB access** *I can access destination*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow outbound HTTP/S
+
+
+
+https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#VPC_Scenario2_Security
+
+
+### VPC Scenario - public and private subnets (VPN)
+
+https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario3.html
+
 
 -------------------------------------------------------------------------------
 
