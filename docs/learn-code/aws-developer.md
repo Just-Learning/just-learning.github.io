@@ -902,11 +902,20 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - have a limited number of transactions per second (TPS)
 - must end with the `.fifo` suffix
 - support up to 300 messages per second
+- doesn't work with SNS Fan Out
 
 ### Standard Queue
 
 - Message Ordering, can be delivered in **multiple times and in any order**
 - **At-Least-Once** Delivery
+
+### Visibility Timeout
+
+- default **30 seconds**, up to **12 hours**
+- **consumer must delete the message** from the queue after receiving and processing it
+- Immediately after a message is received, it remains in the queue
+- To prevent other consumers from receiving and processing the message again
+- https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
 
 ### Polling
 - `WaitTimeSeconds` parameter of a `ReceiveMessage`, between **1 and 20**
@@ -1133,6 +1142,9 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 - **free but pay for the resources** it provisions, full root access
 - error occurs: rollback all resources created on failure
 - can't nested templates
+- **custom resource** for unsupported service
+- circular dependency - when resources from a `DependOn` loop
+
 
 ### Template
 
@@ -1176,6 +1188,7 @@ Outputs:    # An optional list of output values like public IP address using the
             # Fn::Select
             # Fn::Split
             # Fn::Sub
+            # Fn::Equals, Fn::If, Fn::Not, Fn::Or
 
             # Python Helper Script
             # cfn-init
@@ -1188,6 +1201,14 @@ Outputs:    # An optional list of output values like public IP address using the
 
 - the resources that created
 - the end result of an architectural diagram
+
+### Stack Set
+- StackSets extends the functionality of stacks
+- **across multiple accounts and regions** with a single operatio
+
+### Nested Stack
+- Use Nested Stacks to Reuse Common Template Patterns
+- As your infrastructure grows, common patterns can emerge in which you declare the same components in multiple templates. You can separate out these common components and create dedicated templates for them. Then use the resource in your template to reference other templates, creating nested stacks.
 
 ### Status
 
@@ -1205,7 +1226,7 @@ Outputs:    # An optional list of output values like public IP address using the
 
 - Change Sets presents a summary of the **proposed changes** CloudFormation will make when a stack is updated
 - Change sets help check how the changes might impact running resources, especially critical resources, before implementing them
-- A stack goes into the UPDATE_ROLLBACK_FAILED state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue Update Rollback
+- A stack goes into the `UPDATE_ROLLBACK_FAILED `state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue `Update Rollback`
 
 ### Access Control
 
@@ -1226,9 +1247,6 @@ Service Role
 - `200` stacks per account
 - template description fields are limited to `4096 characters`
 - up to `60 parameters` and `60 outputs` in a template.
-
-### Stack
-- the resources that created
 
 -------------------------------------------------------------------------------
 
