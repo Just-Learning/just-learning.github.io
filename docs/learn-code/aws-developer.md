@@ -24,6 +24,15 @@
 
 -------------------------------------------------------------------------------
 
+## AWS account
+
+AWS assigns two unique IDs to each
+- An AWS account ID, a 12 digit number, 123456789012, use to construct arn
+- A canonical user ID, a long string, 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be, ues to S3 Bucket Policy
+
+-------------------------------------------------------------------------------
+
+
 ## IAM
 
 !> IAM is global
@@ -33,6 +42,8 @@ IAM contains **users**, **groups**,  **roles**, **policies** in json
 - fine-grained access control to AWS resources
 - group: group users and assign policies), no nested groups
 - New users have NO permissions when first created, can be assigned **Access Key ID** and **Secret Access Keys** (for AWS CLI or API)
+
+
 
 Tips:
 - `root account` first setup the aws account, full admin access
@@ -458,7 +469,7 @@ Classic Load Balancer
 - HTTP 404 for `NoSuchBucketPolicy`
 - HTTP 409 for conflict issue
 - HTTP 200 for a successful write
-- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`
+- **pre-signed** URL with expiration date and time to download private data using SDK in code `generatePresignedUrl`, default expires in `1 hr`
 - `x-amz-delete-marker`, `x-amz-id-2`, and `x-amz-request-id` are all common S3 response headers
 
 ### Limits
@@ -467,8 +478,8 @@ Classic Load Balancer
 - **Multipart Upload** preferred if > 100MB, must if > 5GB
 - **globally unique**,  **lower-case**, 3 and 63 characters long
 - CANNOT install OS or Apps on S3
-- max **100 S3 buckets** per account
--
+- max `100` S3 buckets per account
+
 ### Price
 - Storage – cost is per GB/month
 - Requests – per request cost varies depending on the request type GET, PUT
@@ -500,6 +511,35 @@ CORS Policy
 
 Replication
 - Cross-region Replication by default copies only updated or newly added objects. To copy existing content, we use command line:
+
+### IAM policies, S3 bucket policies, S3 ACLs
+
+https://aws.amazon.com/blogs/security/iam-policies-and-bucket-policies-and-acls-oh-my-controlling-access-to-s3-resources/
+
+IAM policies and S3 bucket policies - ACL language in json, allow or deny
+
+IAM policies
+- json, principles that **allow/deny** the access on arn
+- centralized permissions, instead of spreading them between IAM and S3.
+- a large number of S3 bucket policies
+
+S3 bucket policies
+- json, principles that **allow/deny** the access on arn
+- if you want a simple way to grant cross-account access to your S3 environment, without using IAM roles.
+- prefer to keep access control policies in the S3
+
+S3 ACLs (access control list)
+- basic **read/write permissions**
+- your account, other aws canonical user id, public access,
+- a legacy access control mechanism that predates IAM
+- apply policies on the **bucket** and **objects**
+- **Bucket and object permissions are independent of each other**
+- An object does not inherit the permissions from its bucket.
+
+
+**least-privilege,**
+- union of all the IAM policies, S3 bucket policies, and S3 ACLs that apply.
+
 
 ### Properties
 
@@ -534,7 +574,7 @@ Multi-Object Delete
 - Volume Gateway
   - In cached mode, store your primary data in **S3** and retain your frequently accessed data locally in **cache**. `(cache partial data on local)`
   - In stored mode, store your entire data set locally, while making an asynchronous S3 and point-in-time EBS snapshots. `(full copy on local)`
-- Tape Gateway (VTL): for backup
+- Tape Gateway (VTL): for bakup
 
 ### Snowball
 - Snowball
@@ -546,11 +586,17 @@ Multi-Object Delete
 ### CloudFront
 
 - Edge Location where content will be cached, separate to Region/AZ, **Read**, **Write**
-- S3 Transfer Acceleration: use CloudFront’s globally distributed edge locations, data -> Edge Location -> S3 Bucket
+- S3 Transfer Acceleration: use CloudFront's globally distributed edge locations, data -> Edge Location -> S3 Bucket
 - Origin: the origin of the files, **S3 Bucket, EC2, LB, R53**
 - Distribution: can have **multiple** origin. Type: Web for websites, RTMP for video streaming
 - TTL **24hr** by default
 - invalidation: refresh all your cached data
+
+
+### High Request rate
+
+> If you anticipate that your workload will consistently exceed `100` requests per second, you should **avoid sequential key** names. If you must use sequential numbers or date and time patterns in key names, add a `random prefix` to the key name. The randomness of the prefix more evenly distributes key names across multiple index partitions.
+
 
 -------------------------------------------------------------------------------
 
@@ -576,7 +622,7 @@ EC2 hosted
 
 ### RDS Multi-AZ (high availability)
 
-!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can’t be used to serve read traffic. To service read-only traffic, use a Read Replica.
+!> Multi-AZ is a **High Availability** feature is not a scaling solution for read-only scenarios; standby replica can't be used to serve read traffic. To service read-only traffic, use a Read Replica.
 
 !> Multi-AZ Standby instance cannot be used as a scaling solution
 
@@ -599,7 +645,7 @@ Failover
 - Multi-AZ failover trigged by
   - **AZ outage**
   - **Primary DB instance fails**
-  - DB instance’s **server type is changed**
+  - DB instance's **server type is changed**
   - OS of the DB instance is undergoing software **patching**
   - A manual **Forced Failover**
 
@@ -653,8 +699,10 @@ Read Replica Creation
 - Auto Scaling Policy (**free**): based on CloudWatch, can only be set to a **single table** or a global secondary indexes within a **single region**
 
 ### Pricing
-- pricing by **read** throughput and **write** throughput
-- storage
+- $ **read** throughput
+- $ **write** throughput
+- $ storage
+- free I/O usage within the same region
 
 ### Consistency model of READ
 
@@ -727,6 +775,11 @@ capture modifications of DynamoDB
 | x                   | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read              |
 
 > A Scan operation always scans the entire table, then filters out values to provide the desired result
+
+Avoid large Query and Scan
+
+- Reduce page size, both query and size, limit, by default is 1 MB
+- Isolate scan operations, two tables
 
 ### Provisioned Throughput
 
@@ -849,11 +902,20 @@ Common usage: write: `PutItem` `BatchWriteItem` read: `GetItem` `BatchGetItem`
 - have a limited number of transactions per second (TPS)
 - must end with the `.fifo` suffix
 - support up to 300 messages per second
+- doesn't work with SNS Fan Out
 
 ### Standard Queue
 
 - Message Ordering, can be delivered in **multiple times and in any order**
 - **At-Least-Once** Delivery
+
+### Visibility Timeout
+
+- default **30 seconds**, up to **12 hours**
+- **consumer must delete the message** from the queue after receiving and processing it
+- Immediately after a message is received, it remains in the queue
+- To prevent other consumers from receiving and processing the message again
+- https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
 
 ### Polling
 - `WaitTimeSeconds` parameter of a `ReceiveMessage`, between **1 and 20**
@@ -1015,10 +1077,15 @@ AWS resources launched by Elastic Beanstalk are fully accessible i.e. you can ss
   - Go
 
 Q: What AWS products and features can be deployed by Elastic Beanstalk
-A:
+
 - Auto scaling groups
 - Elastic Load Balancers
 - RDS Instances
+
+### Environment Types
+
+- load-balancing, auto-scaling environment
+- a single-instance environment.
 
 ### Environment tier
 
@@ -1027,7 +1094,7 @@ Web server environment
 - Every Environment has a **CNAME** url pointing to the ELB, aliased in Route 53 to **ELB** url
 - Each EC2 server instance that runs the application uses a **container** type, which defines the infrastructure topology and software stack
 
-Worker environment:
+Worker environment
 - **Daemon** is responsible for pulling requests from an **SQS** queue and then sending the data to the web application running in the worker environment tier that will process those messages
 - An environment tier whose web application runs **background** jobs is known as a worker tier
 - Worker tiers **pull** jobs from SQS
@@ -1040,7 +1107,7 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 ### SQS Dead Letter Queue
 - useful for debugging your application or messaging system
 - creating a queue and configuring a dead-letter queue
-- messages can’t be processed, the message with the order request is sent to a dead-letter queue
+- messages can't be processed, the message with the order request is sent to a dead-letter queue
 
 ### Beanstalk + logs
 - are stored locally on individual instance
@@ -1050,7 +1117,7 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 
 ### Beanstalk + RDS
 - It is recommended to launch a database instance outside of the environment and configure the application to connect to it outside of the functionality provided by Elastic Beanstalk.
-- Create your RDS instance separately and pass its DNS name to your app’s DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
+- Create your RDS instance separately and pass its DNS name to your app's DB connection string as an environment variable. Create a security group for client machines and add it as a valid source for DB traffic to the security group of the RDS instance itself.
 
 ### Beanstalk + S3
 - Elastic Beanstalk creates an S3 bucket named elasticbeanstalk-region-account-id for each region in which environments is created.
@@ -1075,6 +1142,9 @@ A: AWS Elastic Beanstalk is designed to support a number of multiple running env
 - **free but pay for the resources** it provisions, full root access
 - error occurs: rollback all resources created on failure
 - can't nested templates
+- **custom resource** for unsupported service
+- circular dependency - when resources from a `DependOn` loop
+
 
 ### Template
 
@@ -1118,6 +1188,7 @@ Outputs:    # An optional list of output values like public IP address using the
             # Fn::Select
             # Fn::Split
             # Fn::Sub
+            # Fn::Equals, Fn::If, Fn::Not, Fn::Or
 
             # Python Helper Script
             # cfn-init
@@ -1130,6 +1201,14 @@ Outputs:    # An optional list of output values like public IP address using the
 
 - the resources that created
 - the end result of an architectural diagram
+
+### Stack Set
+- StackSets extends the functionality of stacks
+- **across multiple accounts and regions** with a single operatio
+
+### Nested Stack
+- Use Nested Stacks to Reuse Common Template Patterns
+- As your infrastructure grows, common patterns can emerge in which you declare the same components in multiple templates. You can separate out these common components and create dedicated templates for them. Then use the resource in your template to reference other templates, creating nested stacks.
 
 ### Status
 
@@ -1147,7 +1226,7 @@ Outputs:    # An optional list of output values like public IP address using the
 
 - Change Sets presents a summary of the **proposed changes** CloudFormation will make when a stack is updated
 - Change sets help check how the changes might impact running resources, especially critical resources, before implementing them
-- A stack goes into the UPDATE_ROLLBACK_FAILED state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue Update Rollback
+- A stack goes into the `UPDATE_ROLLBACK_FAILED `state when AWS CloudFormation cannot roll back all changes during an update. Action Point: Continue `Update Rollback`
 
 ### Access Control
 
@@ -1159,18 +1238,15 @@ IAM
 
 Service Role
 
-- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user’s behalf
+- A service role is an AWS IAM role that allows AWS CloudFormation to make calls to resources in a stack on the user's behalf
 - By default, AWS CloudFormation uses a temporary session that it generates from the **user credentials** for stack operations.
-- For a service role, AWS CloudFormation uses the role’s credentials.
+- For a service role, AWS CloudFormation uses the role's credentials.
 - When a service role is specified, AWS CloudFormation always uses that role for all operations that are performed on that stack.
 
 ### Limits
 - `200` stacks per account
 - template description fields are limited to `4096 characters`
 - up to `60 parameters` and `60 outputs` in a template.
-
-### Stack
-- the resources that created
 
 -------------------------------------------------------------------------------
 
@@ -1278,7 +1354,9 @@ Tips:
 - select **IP address range**, create **subnets**, configure **route tables**, **network gateway**, **security settings**
 - IP address in **CIDR** `10.0.0.0/16`, allows `65536` IP address to be available, `http://cidr.xyz/`
 - allows customers to expand their existing VPCs by adding secondary CIDRs after they have create the VPC with the primary CIDR block
--
+- delete VPC will delete all the setups and **detach the VPN connections**
+
+
 ### CIDR - (Classless Inter-Domain Routing)
 - `8 bits . 8 bits . 8 bits . 8 bits / 8 bits` -> / the routing prefix, turn into a netmask
 - `10.0.0.0/16` count 65535, `255.255.0.0` e.g. large block for a VPC
@@ -1311,6 +1389,8 @@ Tips:
 - Elastic IP: can be move fron one instance to another, same or different VPC within the same account
 - Elastic IP: $$ for non usage
 
+> Customers can add the secondary CIDR blocks to the VPC directly from the console or by using the CLI after they have created the VPC with the primary CIDR block.
+
 ### Route Table
 
 - Rules: network traffic from the subnet would be routed, for **IGW**, **VPC Peering**, **NAT Device**
@@ -1324,7 +1404,7 @@ Tips:
 - All Subnets in default VPC have a route out to the internet
 
 ### IGT (Internet Gateway)
-- EC2 instances to access internet
+- **EC2 instances to access internet**
 - managed service, horizontally scaled, no bandwidth constraints on the network traffic
 - attached to 1 VPC
 
@@ -1333,17 +1413,33 @@ Tips:
 3. assign **Public IP or Elastic IP **to the instance
 4. **security group and Network ACL** associated with the instance
 
-### NAT
+### Network Interface
+- You can create a network interface, attach it to an instance, detach it from an instance, and attach it to another instance.
+- Each instance in your VPC has a default network interface (the primary network interface) that is assigned a private IPv4 address from the IPv4 address range of your VPC.
+- You cannot detach a primary network interface from an instance.
+- You can create and attach an additional network interface to any instance in your VPC.
+
+### NAT - Network Address Translation
+- **to enable instances in a private subnet to connect to the Internet**
 - in **public subnet**, w/ **Elastic IP** address, to enable `instances --> internet`, but not the other round
 - private instances need NAT Gateway to perform software updates
 - **NAT Instance**: **disable source/destination check**
 - **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
-- allows **outbound** communication but doesn’t allow machines on the internet to initiate a connection to the privately addressed instances
+- allows **outbound** communication but doesn't allow machines on the internet to initiate a connection to the privately addressed instances
+
+### Elastic IP
+- static IPv4 address
+- a public IPv4 address, which is reachable from the internet
+- allocate a Elastic Ip to your account
+- associate it with your instance or a network interface.
 
 ### Security Group (EC2 instances)
 - firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
 - specify only **Allow rules, but not deny rules**
 - `stateful`, return traffic is automatically allowed
+- VPC automatically comes with a default security group
+  - Allow inbound traffic from instances assigned to the same security group
+  - Allow all outbound IPv4/6 traffic
 
 ### Network ACL (subnets)
 - firewall for associated subnets, **inbound / outbound** traffic at the **subnet level**, applicable to all the instances in the subnet
@@ -1358,6 +1454,8 @@ Tips:
 ### NAT Vs Bastion
 - A NAT instance is used to provide internet traffic to EC2 instances in private subnets
 - A Bastion is used to securely administer EC2 instances (using SSH or RDP) in private subnets.
+
+
 
 ### Limits
 - reserved 5 IPs address (first 4 and last 1 IP address) in each Subnet. e.g. for a Subnet with a CIDR block 10.0.0.0/24 the following five IPs are reserved
@@ -1377,6 +1475,60 @@ Tips:
 - **Inbound or Outbound Rules per Security Group** = `50`
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
+- smallest IPv4 subnet (and VPC) you can create uses a `/28`
+
+### VPC Scenario - single public subnet
+
+A /16 network with a /24 subnet. Public subnet instances use Elastic IPs or Public IPs to access the Internet.
+
+### VPC Scenario - public and private subnets (NAT)
+
+A /16 network with two /24 subnets. Public subnet instances use Elastic IPs to access the Internet. Private subnet instances access the Internet via Network Address Translation (NAT).
+
+**Custom Route Table** - public subnet
+- Destination,	Target
+- 10.0.0.0/16, local *in-vpc communication*
+- 0.0.0.0/0, igw-id *access internet via IGW*
+
+WebServer Security Group - public subnet
+- Specify this security group when you launch the web servers in the public subnet.
+- allow the web servers to receive Internet traffic `port 80 / 443` and send traffic to the Internet (**request + response**)
+- allow SSH and RDP traffic from your network `port 3306`
+- read and write requests to the database servers in the private subnet
+
+- Inbound (**source**) **web server + SSH/RDP** *source can access me*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow inbound HTTP/S access to the web servers from any IPv4 address.
+  - home network, TCP, `22`/`3389`, SSh Linux / RDP Windows
+- Outbound (**destination**) **web server + DB access** *I can access destination*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow outbound HTTP/S access to any IPv4 address.
+  - `DBServerSG`, TCP, 1433, SQL Server
+  - `DBServerSG`, TCP, 3306, MySQL
+
+**Main Route Table** - private subnet
+- Destination	Target
+- 10.0.0.0/16, local *in-vpc communication*
+- 0.0.0.0/0, nat-gateway-id *access internet via NAT*
+
+
+DBServer Security Group - private subnet
+- Specify this security group when you launch the database servers in the private subnet.
+
+- InBounce (**source**) **Web Server read DB** *source can access me*
+  - WebServerSG, TCP, `1433`/`3306`, SQL Server / MySQL
+- Outbound (**destination**) **web server + DB access** *I can access destination*
+  - 0.0.0.0/0, TCP, `80`/`443`, Allow outbound HTTP/S
+
+
+
+https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#VPC_Scenario2_Security
+
+
+### VPC Scenario - public and private subnets (VPN)
+
+A /16 network with two /24 subnets. One subnet is directly connected to the Internet while the other subnet is connected to your corporate network via IPsec VPN tunnel. (VPN charges apply.)
+
+https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario3.html
+
 
 -------------------------------------------------------------------------------
 
