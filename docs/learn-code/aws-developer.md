@@ -1354,7 +1354,9 @@ Tips:
 - select **IP address range**, create **subnets**, configure **route tables**, **network gateway**, **security settings**
 - IP address in **CIDR** `10.0.0.0/16`, allows `65536` IP address to be available, `http://cidr.xyz/`
 - allows customers to expand their existing VPCs by adding secondary CIDRs after they have create the VPC with the primary CIDR block
--
+- delete VPC will delete all the setups and **detach the VPN connections**
+
+
 ### CIDR - (Classless Inter-Domain Routing)
 - `8 bits . 8 bits . 8 bits . 8 bits / 8 bits` -> / the routing prefix, turn into a netmask
 - `10.0.0.0/16` count 65535, `255.255.0.0` e.g. large block for a VPC
@@ -1402,7 +1404,7 @@ Tips:
 - All Subnets in default VPC have a route out to the internet
 
 ### IGT (Internet Gateway)
-- EC2 instances to access internet
+- **EC2 instances to access internet**
 - managed service, horizontally scaled, no bandwidth constraints on the network traffic
 - attached to 1 VPC
 
@@ -1411,17 +1413,33 @@ Tips:
 3. assign **Public IP or Elastic IP **to the instance
 4. **security group and Network ACL** associated with the instance
 
-### NAT
+### Network Interface
+- You can create a network interface, attach it to an instance, detach it from an instance, and attach it to another instance.
+- Each instance in your VPC has a default network interface (the primary network interface) that is assigned a private IPv4 address from the IPv4 address range of your VPC.
+- You cannot detach a primary network interface from an instance.
+- You can create and attach an additional network interface to any instance in your VPC.
+
+### NAT - Network Address Translation
+- **to enable instances in a private subnet to connect to the Internet**
 - in **public subnet**, w/ **Elastic IP** address, to enable `instances --> internet`, but not the other round
 - private instances need NAT Gateway to perform software updates
 - **NAT Instance**: **disable source/destination check**
 - **NAT Gateway**: fully managed service, scale automatically, no patch, no security group
 - allows **outbound** communication but doesn't allow machines on the internet to initiate a connection to the privately addressed instances
 
+### Elastic IP
+- static IPv4 address
+- a public IPv4 address, which is reachable from the internet
+- allocate a Elastic Ip to your account
+- associate it with your instance or a network interface.
+
 ### Security Group (EC2 instances)
 - firewall for associated EC2 instances, **inbound / outbound** traffic at the **instance level**
 - specify only **Allow rules, but not deny rules**
 - `stateful`, return traffic is automatically allowed
+- VPC automatically comes with a default security group
+  - Allow inbound traffic from instances assigned to the same security group
+  - Allow all outbound IPv4/6 traffic
 
 ### Network ACL (subnets)
 - firewall for associated subnets, **inbound / outbound** traffic at the **subnet level**, applicable to all the instances in the subnet
@@ -1436,6 +1454,8 @@ Tips:
 ### NAT Vs Bastion
 - A NAT instance is used to provide internet traffic to EC2 instances in private subnets
 - A Bastion is used to securely administer EC2 instances (using SSH or RDP) in private subnets.
+
+
 
 ### Limits
 - reserved 5 IPs address (first 4 and last 1 IP address) in each Subnet. e.g. for a Subnet with a CIDR block 10.0.0.0/24 the following five IPs are reserved
@@ -1455,11 +1475,15 @@ Tips:
 - **Inbound or Outbound Rules per Security Group** = `50`
 - Route table per VPC = `200`
 - VPC peering per VPC = `50`
-
+- smallest IPv4 subnet (and VPC) you can create uses a `/28`
 
 ### VPC Scenario - single public subnet
 
+A /16 network with a /24 subnet. Public subnet instances use Elastic IPs or Public IPs to access the Internet.
+
 ### VPC Scenario - public and private subnets (NAT)
+
+A /16 network with two /24 subnets. Public subnet instances use Elastic IPs to access the Internet. Private subnet instances access the Internet via Network Address Translation (NAT).
 
 **Custom Route Table** - public subnet
 - Destination,	Target
@@ -1500,6 +1524,8 @@ https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario2.html#VPC_Sc
 
 
 ### VPC Scenario - public and private subnets (VPN)
+
+A /16 network with two /24 subnets. One subnet is directly connected to the Internet while the other subnet is connected to your corporate network via IPsec VPN tunnel. (VPN charges apply.)
 
 https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario3.html
 
