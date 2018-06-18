@@ -158,6 +158,13 @@ Temporary Security Credentials
 - You can allow rules, but cannot deny rules
 - You must assign each server to at least 1 security group
 
+### IP Address
+
+- A **private IP** addresscommunication between instances in the same network, internal DNS hostname, e.g. `ip-10-251-50-12.ec2.internal`
+- A **public IP** address is an IPv4 address that's reachable from the Interne, external DNS hostname, e.g. `ec2-203-0-113-25.compute-1.amazonaws.com`
+- A **Elastic IP** address is a persistent public IP address that can be associated to and from instances as you require
+- Elastic IP is free, however, if it is allocated and associated with a stopped instance, $$$
+
 ### EBS
 
 Blocked Storage, like virtual disk, `AttachVolume ` to attach EBS volume to EC2 instance
@@ -315,7 +322,9 @@ Q: security groups
 - add rules `authorize-security-group-egress` `authorize-security-group-ingress`
 - `ingress`入口
 - `egress` 出口
--
+
+
+communication between instances in the same network
 -------------------------------------------------------------------------------
 
 ## Auto Scaling
@@ -331,6 +340,11 @@ Scalable resources
 - ECS services
 - Spot Fleet requests
 
+Scale up speed
+1. lambda -> instantly
+2. EC2 + ELB + Auto Scalling Group -> single-digit minutes
+3. RDS -> at least 15 minutes
+
 ### What is EC2 Auto Scaling
 - **Auto Scaling groups**: create collections of EC2 instances
 - **Launch configuration** as a template for its EC2 instances: AMI, keypair, security group, etc. any new instances launched use the new configuration parameters, but the existing instances are not affected.
@@ -344,6 +358,8 @@ Scalable resources
 ### Auto Scaling + Load Balancer
 
 As the Auto Scaling group adds and removes EC2 instances, you must ensure that the traffic for your application is distributed across all of your EC2 instances. The Elastic Load Balancing service automatically routes incoming web traffic across such a dynamically changing number of EC2 instances. Your load balancer acts as a single point of contact for all incoming traffic to the instances in your Auto Scaling group
+
+ > An Auto Scaling group periodically checks the health status of each instance. It can use **EC2 status checks only**, or **EC2 status checks plus Elastic Load Balancing health checks**. If it determines that an instance is unhealthy, it replaces the instance.
 
 Instance Status in Load Balancer
 - `Adding` -> register all instances to Load Balance -> `Added`
@@ -360,6 +376,7 @@ What is an unhealthy instance?
 ELB health check
 - ping instance and check the timeout
 - interval, unhealthy threshold, healthy threshold
+
 
 Manual scaling
 - **Changing the desired capacity** limit of the Auto Scaling group
@@ -429,6 +446,20 @@ Network Load Balancer
 Classic Load Balancer
 - basic load balancing across multiple Amazon EC2 instances and operates at both the request level and connection level
 - both request and connection level
+
+### Connection Draining
+- By default, if an registered EC2 instance with the ELB is deregistered or becomes unhealthy, the load balancer immediately closes the connection
+- Connection draining allows you to specify a maximum time (between 1 and 3,600 seconds and default `300 seconds`) to keep the connections alive before reporting the instance as de-registered.
+-
+### Sticky Sessions (Session Affinity)
+ELB can be configured to use sticky session feature (also called session affinity) which enables it to bind a user’s session to an instance and ensures all requests are sent to the same instance.
+
+### Load Balancer Deletion
+Deleting a load balancer does not affect the instances registered with the load balancer and they would continue to run
+
+### X-Forwarded Headers & Proxy Protocol Support
+As the Elastic Load Balancer intercepts the traffic between the client and the back end servers, the back end server does not know the IP address, Protocol and the Port used between the Client and the Load balancer.
+
 
 ### Cross Zone
 
@@ -767,12 +798,12 @@ capture modifications of DynamoDB
 
 ### Query vs Scan
 
-| Query               | Scan                                                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| by partition key    | scan all items or index, use `ProjectionExpression` parameter so that the Scan only returns some of the attributes |
-| fast                | slow                                                                                                               |
-| x                   | up to **1MB** `LastEvaluatedKey`, **Paginating the Results**                                                       |
-| x                   | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read              |
+| Query            | Scan                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| by partition key | scan all items or index, use `ProjectionExpression` parameter so that the Scan only returns some of the attributes |
+| fast             | slow                                                                                                               |
+| x                | up to **1MB** `LastEvaluatedKey`, **Paginating the Results**                                                       |
+| x                | a scan with `ConsistentRead` consumes twice the read capacity as a scan with eventual consistent read              |
 
 > A Scan operation always scans the entire table, then filters out values to provide the desired result
 
