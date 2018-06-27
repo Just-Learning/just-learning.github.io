@@ -45,13 +45,59 @@ Source - Build - Staging - Production
 
 AWS Services: CodeCommit, CodeDeploy, CodePipeline
 
+AMI vs Bootstrapping
+- partial custom AMI
+- partial bootstrap for flexibility
+
 Blue Green Deployment
+- Low TTL on DNS record
+- Backward compatible
 
 ### CloudFormation
 
+- Infra as code
+- Valid Template
+- `Ref` function to define a reference
+- Template store in `S3` - `TemplateURL`
+- Resources `tag` for CloudFormation reference later
+
+Resource
+
+Parameters
+- `KeyName` - `"Type": "AWS::EC2::KeyPair::KeyName"`
+- `InstanceType` -  `"AllowValues": ["t2.micro", "t2.nano"]`
+- `SSHLocation` - using regex valid the data, `AllowedPattern`
+- `ImageId` same image has differnt image id in different region, `Fn::FindInMap` to get the image id dynamically
+- `DBPassword` - set `NoEcho` to true
+
+Mapping
+
+Output
+- log the url that deployed after launched `Fn::Join` `Fn::GetAtt`
+
+Bootstrap
+- `UserData` must be **Base64** encoded
+- Install packages, config params, inject script using `Fn::Join`
+
+Wait bootstrap finish
+- WaitCondition
+- WaitHandle
+- `DependsOn` - Resources are created in parallel w/o `DependsOn`
+- `Timeout` failure if expired
+
+CreationPolicy
+- `ResourdceSignal`
+- `Timeout`
+
+> You can turn off `rollback on failure` for troubleshooting, check log in `/var/log` or `c:\cfn\log`
+
+Nested Templates
+- Template 1 --output as input-- Template 2
+- send output to another template as input params
+- `Fn::GetAtt` VPCStack, Outputs.SubnetId
+
 ### Beanstalk
 
-### OpsWorks
 
 ### Automating
 
