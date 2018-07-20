@@ -2,5 +2,6 @@
 
 > I like automatic manual process
 
-* [ ] definitely jq *a powerful json query tool*
+* [An Intro to jq](./learn-tools/jq-intro.md) *a powerful json query tool*
+* [ ] An Dive to jq
 * [ ] then Graphviz

@@ -8,6 +8,7 @@
     * [Setup this website](./learn-code/website-setup.md)
 
 * [Learn Tools 🔨](./learn-tools/readme.md)
+    * [An Intro to jq](./learn-tools/jq-intro.md)
 
 * [learn Data 📈](./learn-data/readme.md)
 
